@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QPalette, QColor
-from ui.main_window import ChatWindow
+from ui.main_window import MainWindow
 
 
 def main():
@@ -27,10 +27,11 @@ def main():
 
     # 设置应用全局字体
     app_font = app.font()
-    app_font.setPointSize(11)  # 增大全局字体
+    app_font.setPointSize(11)
     app.setFont(app_font)
 
-    window = ChatWindow()
+    # 创建主窗口
+    window = MainWindow()
     window.show()
     sys.exit(app.exec_())
 
