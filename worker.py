@@ -67,15 +67,18 @@ class Worker(QThread):
                 search_context = search_results
                 self.search_complete.emit("百度搜索", search_results)
 
-        # # ========== Tavily搜索处理 ==========
-        # self.status_signal.emit("🔍 正在通过Tavily进行深度搜索...")
-        # assistant = SearchAssistant(search_context)
-        # findings = assistant.search(depth=3, user_input=self.user_input)
-        # if findings:
-        #     self.search_complete.emit("Tavily搜索", findings)
-        #     search_context += findings
+        # ========== Tavily搜索处理 ==========
+        if get_config("enable_tavily"):  # 只在启用 Tavily 时执行
+            self.status_signal.emit("🔍 正在通过Tavily进行深度搜索...")
+            assistant = SearchAssistant(search_context)
+            findings = assistant.search(depth=3, user_input=self.user_input)
+            if findings:
+                self.search_complete.emit("Tavily搜索", findings)
+                search_context += findings
 
-        # ========== DeepSeek-R1 API请求 ==========
+        # ========== DeepSeek API请求 ==========
+        # 根据配置选择模型
+        model_name = "deepseek-reasoner" if get_config("enable_r1") else "deepseek-chat"
         if search_context:
             self.conversation_history.append(
                 {"role": "system", "content": search_context}
@@ -86,7 +89,7 @@ class Worker(QThread):
         self.conversation_history[0]["content"] = get_system_prompt()
 
         payload = {
-            "model": "deepseek-reasoner",
+            "model": model_name,
             "messages": self.conversation_history,
             "stream": True,
         }
@@ -112,6 +115,12 @@ class Worker(QThread):
 
             full_response = ""
             in_reasoning_block = False
+            role_name = "assistant"
+
+            # 如果助手是V3，则设置角色名为“assistant-v3”且一开始就创建回复控件
+            if not get_config("enable_r1"):
+                role_name += "-v3"
+                self.update_signal.emit(role_name, "===== 💬 回复开始 =====\n")
 
             # 处理流式响应
             for line in response.iter_lines():
@@ -132,20 +141,20 @@ class Worker(QThread):
                                     if not in_reasoning_block:
                                         # 使用特殊分隔符触发新控件创建
                                         self.update_signal.emit(
-                                            "assistant", "===== 🤔 思考开始 ====="
+                                            role_name, "===== 🤔 思考开始 =====\n"
                                         )
                                         in_reasoning_block = True
                                     # 发送实际思考内容
-                                    self.update_signal.emit("assistant", reasoning)
+                                    self.update_signal.emit(role_name, reasoning)
                                 elif content:
                                     # 处理回复内容
                                     if in_reasoning_block:
                                         # 思考结束，发送分隔符
                                         self.update_signal.emit(
-                                            "assistant", "===== 💬 回复开始 ====="
+                                            role_name, "===== 💬 回复开始 =====\n"
                                         )
                                         in_reasoning_block = False
-                                    self.update_signal.emit("assistant", content)
+                                    self.update_signal.emit(role_name, content)
                         except json.JSONDecodeError:
                             continue
 

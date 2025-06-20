@@ -5,23 +5,27 @@ import time
 # 配置文件路径
 CONFIG_PATH = "config.json"
 
+# 默认配置
+DEFAULT_CONFIG = {
+    "version": "1.0",
+    "base_url": "https://api.deepseek.com/v1",
+    "api_key": "你的deepseek api",
+    "tavily_api_key": "你的tavily api",
+    "original_system_prompt": "你是一个智能助手，在一个个人平台上与用户交流。若用户提问涉及最新信息，则平台可能会为你提供百度搜索的简要结果，还可能提供调用Tavily API搜索到的结果，辅助你更好地解答。",
+    "render_threshold": 2,
+    "username": "",
+    "enable_r1": False,
+    "enable_tavily": False,
+}
 
-# 初始化默认配置（若文件不存在）
+
 def _init_default_config():
-    default_config = {
-        "base_url": "https://api.deepseek.com/v1",
-        "api_key": "你的deepseek api",
-        "tavily_api_key": "你的tavily api",
-        "original_system_prompt": "你是一个智能助手，在一个个人平台上与用户交流。若用户提问涉及最新信息，则平台可能会为你提供百度搜索的简要结果，还可能提供调用Tavily API搜索到的结果，辅助你更好地解答。",
-        "render_threshold": 2,
-        "username": "",
-    }
-
+    """初始化默认配置（若文件不存在）"""
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-        json.dump(default_config, f, indent=4, ensure_ascii=False)
+        json.dump(DEFAULT_CONFIG, f, indent=4, ensure_ascii=False)
 
 
-# 全局版本
+# 真正的版本
 VERSION = "1.0"
 
 # 全局配置变量（单例）
@@ -30,8 +34,10 @@ _config = None
 
 def get_config(key=None):
     global _config
+    if _config and _config["version"] != VERSION:
+        _config = None
     if _config is None:
-        # 首次加载配置
+        # 加载配置
         if not os.path.exists(CONFIG_PATH):
             _init_default_config()
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:

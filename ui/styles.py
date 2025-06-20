@@ -6,6 +6,30 @@ APP_STYLESHEET = """
     QScrollArea {
         border: none;
     }
+    /* 状态栏样式 */
+    QStatusBar {
+        background-color: #F0F0F0;
+        border-top: 1px solid #D0D0D0;
+        padding: 0 5px;
+        height: 40px;  /* 明确设置高度 */
+    }
+    QStatusBar QLabel {
+        color: #555;
+        font-weight: bold;
+        padding: 0 3px;
+    }
+    QStatusBar QPushButton {
+        min-height: 22px;
+        /* 移除最小宽度设置 */
+        padding: 2px 8px;  /* 减少内边距 */
+        font-size: 10pt;  /* 增大字体 */
+        border-radius: 3px;
+    }
+    /* 滚动按钮样式 */
+    QStatusBar QPushButton[style*="scroll"] {
+        background-color: #4A90E2;
+        color: white;
+    }
 """
 
 INPUT_STYLE = """
@@ -234,3 +258,25 @@ BUTTON_STYLES = {
         }
     """,
 }
+
+TOGGLE_BUTTON_STYLE_ENABLED = """
+    QPushButton {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+"""
+
+TOGGLE_BUTTON_STYLE_DISABLED = """
+    QPushButton {
+        background-color: #f44336;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+"""

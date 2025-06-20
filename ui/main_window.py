@@ -10,13 +10,15 @@ from PyQt5.QtWidgets import (
     QSplitter,
     QStatusBar,
     QLineEdit,
+    QSizePolicy,
+    QMessageBox,
 )
 from PyQt5.QtCore import Qt, QTimer, QObject
 from PyQt5.QtGui import QFont, QTextCursor
 import datetime
 from .message_widget import ChatMessageWidget  # 导入消息组件
 from worker import Worker
-from config_manager import get_system_prompt
+from config_manager import *
 from .styles import *
 
 
@@ -25,7 +27,7 @@ class ChatWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("DeepSeek-R1 聊天器")
+        self.setWindowTitle("DeepSeek 聊天器")
         self.setGeometry(100, 100, 1920, 1600)  # 增大窗口尺寸
 
         # 初始化对话历史
@@ -49,7 +51,7 @@ class ChatWindow(QMainWindow):
         main_layout.setSpacing(15)
 
         # 标题 - 增大字体
-        title_label = QLabel("DeepSeek-R1 聊天器")
+        title_label = QLabel("DeepSeek 聊天器")
         title_font = QFont()
         title_font.setPointSize(22)  # 增大标题字体
         title_font.setBold(True)
@@ -187,16 +189,16 @@ class ChatWindow(QMainWindow):
 
         # 发送按钮 - 增大按钮尺寸
         self.send_button = QPushButton("发送")
-        self.send_button.setFixedHeight(60)  # 增加高度
+        self.send_button.setFixedHeight(60)
         button_font = QFont()
-        button_font.setPointSize(12)  # 增大按钮字体
+        button_font.setPointSize(12)
         self.send_button.setFont(button_font)
         self.send_button.setStyleSheet(BUTTON_STYLES["send"])
         self.send_button.clicked.connect(self.send_message)
 
         # 清除按钮 - 增大按钮尺寸
         clear_button = QPushButton("新对话")
-        clear_button.setFixedHeight(60)  # 增加高度
+        clear_button.setFixedHeight(60)
         clear_button.setFont(button_font)
         clear_button.setStyleSheet(BUTTON_STYLES["clear"])
         clear_button.clicked.connect(self.clear_conversation)
@@ -215,52 +217,119 @@ class ChatWindow(QMainWindow):
         # 状态栏
         self.status_bar = QStatusBar()
         self.status_bar.setFont(QFont("Arial", 10))
-        self.status_bar.showMessage("就绪")
+        self.status_bar.setMinimumHeight(50)  # 确保状态栏高度足够
 
-        # 添加滚动到底部按钮
+        # 创建左侧容器
+        left_container = QWidget()
+        left_layout = QHBoxLayout(left_container)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(10)  # 增加间距
+
+        # 添加状态消息标签
+        self.status_label = QLabel("就绪")
+        self.status_label.setStyleSheet(
+            "color: #555; font-weight: bold; min-width: 100px;"
+        )
+        left_layout.addWidget(self.status_label)
+
+        # 添加分隔符
+        separator = QLabel("|")
+        separator.setStyleSheet("color: #999; margin: 0 5px;")
+        left_layout.addWidget(separator)
+
+        # 添加新按钮
+        self.btn_r1 = QPushButton("深度思考(R1)")
+        self.btn_r1.setCheckable(True)
+        self.btn_r1.setChecked(get_config("enable_r1"))
+        self.btn_r1.setStyleSheet(self.get_button_style(get_config("enable_r1")))
+        # self.btn_r1.setFixedHeight(45)  # 只设置高度，宽度自适应
+        self.btn_r1.setMaximumWidth(180)  # 设置最大宽度
+        self.btn_r1.clicked.connect(self.toggle_r1)
+        left_layout.addWidget(self.btn_r1)
+
+        self.btn_tavily = QPushButton("Tavily")
+        self.btn_tavily.setCheckable(True)
+        self.btn_tavily.setChecked(get_config("enable_tavily"))
+        self.btn_tavily.setStyleSheet(
+            self.get_button_style(get_config("enable_tavily"))
+        )
+        # self.btn_tavily.setFixedHeight(45)  # 只设置高度，宽度自适应
+        self.btn_tavily.setMaximumWidth(90)  # 设置最大宽度
+        self.btn_tavily.clicked.connect(self.toggle_tavily)
+        left_layout.addWidget(self.btn_tavily)
+
+        # 添加到状态栏左侧
+        self.status_bar.addWidget(left_container, 1)  # 使用拉伸因子1
+
+        # 添加滚动到底部按钮到右侧
         self.scroll_button = QPushButton("↓ 滚动到底")
-        self.scroll_button.setFixedHeight(40)
+        self.scroll_button.setFixedHeight(45)  # 只设置高度，宽度自适应
+        # self.scroll_button.setMinimumWidth(100)  # 设置最小宽度
         self.scroll_button.setStyleSheet(BUTTON_STYLES["scroll"])
         self.scroll_button.clicked.connect(self.scroll_to_bottom)
-
-        # 在状态栏添加按钮
         self.status_bar.addPermanentWidget(self.scroll_button)
 
         # 设置窗口样式
         self.setStyleSheet(APP_STYLESHEET)
         self.setStatusBar(self.status_bar)
 
-        # 添加测试消息验证Markdown渲染
-        test_md = """
-        ## Markdown 渲染测试
-        - 列表项
-        - \\( y=x^2+b \\)
-        
-        ```python
-        print("Hello World")
-        ```
-        
-        | 表头1 | 表头2 |
-        |-------|-------|
-        | 内容1 | 内容2 |
-        """
-        test_msg = ChatMessageWidget("assistant", test_md, True)
-        self.chat_layout.addWidget(test_msg)
-
         self.init_search()
+
+    def get_button_style(self, enabled):
+        """根据状态返回按钮样式"""
+        if enabled:
+            return """
+                QPushButton {
+                    background-color: #DBEAFE;
+                    color: #4D6BFE;
+                    border: 1px solid #007AFF;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    min-width: 0;
+                }
+            """
+        else:
+            return """
+                QPushButton {
+                    background-color: white;
+                    color: #4C4C4C;
+                    border: 1px solid #000000;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    min-width: 0;
+                }
+            """
+
+    def toggle_r1(self):
+        """切换 R1 深度思考状态"""
+        new_config = get_config()
+        new_config["enable_r1"] = not new_config["enable_r1"]
+        update_config(new_config)
+        self.btn_r1.setChecked(new_config["enable_r1"])
+        self.btn_r1.setStyleSheet(self.get_button_style(new_config["enable_r1"]))
+
+    def toggle_tavily(self):
+        """切换 Tavily 搜索状态"""
+        new_config = get_config()
+        new_config["enable_tavily"] = not new_config["enable_tavily"]
+        update_config(new_config)
+        self.btn_tavily.setChecked(new_config["enable_tavily"])
+        self.btn_tavily.setStyleSheet(
+            self.get_button_style(new_config["enable_tavily"])
+        )
 
     def safe_update_time(self):
         """安全更新时间显示"""
         try:
-            # 检查对象是否仍然有效
             if not self.initial_msg or not isinstance(
                 self.initial_msg, ChatMessageWidget
             ):
                 return
 
             self.initial_msg.set_content(get_system_prompt(), "system")
-        except RuntimeError as e:
-            # 捕获可能的对象删除错误
+        except Exception as e:
             print(f"更新时间时出错: {e}")
             self.stop_and_clean_timer()
 
@@ -293,7 +362,7 @@ class ChatWindow(QMainWindow):
 
         # 禁用发送按钮
         self.send_button.setEnabled(False)
-        self.status_bar.showMessage("处理中...")
+        self.status_label.setText("处理中...")
 
         # 设置工作状态
         self.worker_active = True
@@ -310,7 +379,7 @@ class ChatWindow(QMainWindow):
         # 创建并启动工作线程
         self.worker = Worker(user_input, self.conversation_history)
         self.worker.update_signal.connect(self.add_message)
-        self.worker.status_signal.connect(self.status_bar.showMessage)
+        # self.worker.status_signal.connect(self.status_label.setText)
         self.worker.search_complete.connect(self.add_search_result)
         self.worker.finished.connect(self.on_worker_finished)
         self.worker.start()
@@ -318,7 +387,7 @@ class ChatWindow(QMainWindow):
     def add_message(self, role, content):
         """添加消息到聊天界面（修复版）"""
         # 特殊处理：当收到思考/回复分隔符时创建新控件
-        if role == "assistant":
+        if role and role.startswith("assistant"):
             if "🤔 思考开始" in content:
                 # 创建思考控件，并设置 is_thinking=True
                 self.thinking_widget = self._create_new_message_widget(
@@ -338,13 +407,17 @@ class ChatWindow(QMainWindow):
                 self.scroll_to_bottom()
                 return
 
-        # 关键修改：如果当前有思考控件，将内容追加到思考控件
-        if role == "assistant" and self.thinking_widget:
+        # 如果当前有思考控件，将内容追加到思考控件
+        if role and role.startswith("assistant") and self.thinking_widget:
             self.thinking_widget.append_content(content)
             return
 
-        # 关键修改：如果当前有回复控件，将内容追加到回复控件
-        if role == "assistant" and hasattr(self, "current_assistant_widget"):
+        # 如果当前有回复控件，将内容追加到回复控件
+        if (
+            role
+            and role.startswith("assistant")
+            and hasattr(self, "current_assistant_widget")
+        ):
             self._append_to_existing(content)
             return
 
@@ -358,7 +431,9 @@ class ChatWindow(QMainWindow):
         """
         widget = ChatMessageWidget(role, content, is_thinking=is_thinking)
         self.chat_layout.addWidget(widget)
-        if role == "assistant" and not is_thinking:  # 思考控件不是当前回复控件
+        if (
+            role and role.startswith("assistant") and not is_thinking
+        ):  # 思考控件不是当前回复控件
             self.current_assistant_widget = widget
         return widget
 
@@ -384,7 +459,7 @@ class ChatWindow(QMainWindow):
     def on_worker_finished(self):
         """工作线程完成时调用"""
         self.send_button.setEnabled(True)
-        self.status_bar.showMessage("就绪")
+        self.status_label.setText("就绪")
         self.worker_active = False
 
         # 强制渲染最后的内容
@@ -409,11 +484,25 @@ class ChatWindow(QMainWindow):
         scrollbar.setValue(scrollbar.maximum())
 
     def clear_conversation(self):
-        """清除对话历史"""
+        """清除对话历史（带确认弹窗）"""
+        # 创建确认对话框
+        reply = QMessageBox.question(
+            self,
+            "确认清除",
+            "即将清除对话历史并开启新对话，确定执行吗？",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+
+        # 如果用户选择否，则取消操作
+        if reply == QMessageBox.No:
+            self.status_label.setText("清除操作已取消")
+            return
+
+        """清除对话历史（确认后执行）"""
         # 停止当前工作线程
         if self.worker and self.worker.isRunning():
             self.worker.stop()
-            self.worker.wait()
 
         # 清除聊天界面
         for i in reversed(range(self.chat_layout.count())):
@@ -430,7 +519,7 @@ class ChatWindow(QMainWindow):
         )
         self.chat_layout.addWidget(self.initial_msg)
 
-        self.status_bar.showMessage("对话已清除")
+        self.status_label.setText("对话已清除")
 
     def keyPressEvent(self, event):
         """处理键盘快捷键 - 增强版"""

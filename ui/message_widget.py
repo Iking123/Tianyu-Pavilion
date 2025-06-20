@@ -26,9 +26,18 @@ class ChatMessageWidget(QWidget):
         layout.setAlignment(Qt.AlignTop)  # 顶部对齐
 
         # 角色标签
-        role_label = QLabel(
-            "你" if role == "user" else "DeepSeek-R1" if role == "assistant" else "系统"
-        )
+        role_name = ""
+        match role:
+            case "user":
+                role_name = "你"
+            case "assistant":
+                role_name = "DeepSeek-R1"
+            case "assistant-v3":
+                role_name = "DeepSeek-V3"
+                role = "assistant"
+            case "system":
+                role_name = "系统"
+        role_label = QLabel(role_name)
         role_font = QFont()
         role_font.setBold(True)
         role_font.setPointSize(12)
