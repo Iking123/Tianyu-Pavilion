@@ -1,0 +1,11 @@
+# 忽略 Python 编译文件
+__pycache__/
+*.pyc
+
+# 忽略配置文件（保留模板）
+config.json
+
+# 忽略系统/IDE 文件
+.DS_Store
+.idea/
+.vscode/
