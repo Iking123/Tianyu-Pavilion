@@ -9,12 +9,12 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QTimer, QObject
 from PyQt5.QtGui import QFont
-from worker import Worker
-from config_manager import *
-from .styles import *
-from .search_toolbar import SearchToolbar
-from .message_display import MessageDisplayArea
-from .input_panel import InputPanel  # 导入新的输入面板组件
+from core.worker import Worker
+from core.config_manager import *
+from ui.styles import *
+from ui.search_toolbar import SearchToolbar
+from ui.message_display import MessageDisplayArea
+from ui.input_panel import InputPanel  # 导入新的输入面板组件
 
 
 class ChatComponent(QWidget):
@@ -24,11 +24,11 @@ class ChatComponent(QWidget):
         super().__init__()
         self.main_window = main_window
         self.conversation_history = [{"role": "system", "content": get_system_prompt()}]
-        self.init_ui()
         self.worker = None
         self.timer = None
         self.worker_active = False
         self.thinking_widget = None
+        self.init_ui()
 
     def init_ui(self):
         # 主布局
@@ -83,6 +83,14 @@ class ChatComponent(QWidget):
         self.search_timer = QTimer()
         self.search_timer.setSingleShot(True)
         self.search_timer.timeout.connect(self.perform_search)
+
+        # # 渲染测试
+        # self.start_replying("assistant")
+        # self.add_message("assistant", "# 标题\n")
+        # self.add_message("assistant", "- 列表1\n")
+        # self.add_message("assistant", "- 列表2\n")
+        # self.add_message("assistant", "* 列表3\n")
+        # self.message_display.finish_assistant_message()
 
     def safe_update_time(self):
         """安全更新时间显示"""
@@ -150,7 +158,7 @@ class ChatComponent(QWidget):
         self.message_display.start_assistant_message(role, "")
         self.message_display.scroll_to_bottom()
 
-    def add_message(self, role, content, is_thinking):
+    def add_message(self, role, content, is_thinking=False):
         """添加消息到聊天界面"""
         if role and role.startswith("assistant"):
             if is_thinking:

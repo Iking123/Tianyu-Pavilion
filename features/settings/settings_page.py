@@ -1,3 +1,6 @@
+import sys
+import os
+import subprocess
 from PyQt5.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -11,10 +14,11 @@ from PyQt5.QtWidgets import (
     QComboBox,
     QCheckBox,
     QMessageBox,
+    QApplication,
 )
 from PyQt5.QtGui import QIcon, QFont, QDoubleValidator, QIntValidator
-from PyQt5.QtCore import Qt
-from config_manager import *
+from PyQt5.QtCore import Qt, QTimer
+from core.config_manager import *
 
 
 class SettingsPage(QWidget):
@@ -164,7 +168,7 @@ class SettingsPage(QWidget):
         layout.addLayout(form_layout)
 
         # 保存按钮
-        save_btn = QPushButton("保存并返回")
+        save_btn = QPushButton("保存并重启")
         save_btn.setFont(QFont("Microsoft Yahei", 12, QFont.Bold))
         save_btn.setStyleSheet(
             """
@@ -185,7 +189,7 @@ class SettingsPage(QWidget):
         save_btn.clicked.connect(self.save_settings)
 
     def save_settings(self):
-        """保存设置，弹窗确认"""
+        """保存设置，然后重启应用"""
         reply = QMessageBox.question(
             self,
             "确认保存",
@@ -223,11 +227,28 @@ class SettingsPage(QWidget):
 
         # 保存配置
         update_config(new_config)
-        self.main_window.update_status("设置已保存")
-        # 保存成功后返回主页
-        self.go_back()
+        self.main_window.update_status("设置已保存，应用即将重启...")
+
+        # 延迟重启，让用户看到提示
+        QTimer.singleShot(1500, self.restart_application)  # 1.5秒后重启
 
     def go_back(self):
         """返回主页"""
         if self.main_window:
             self.main_window.switch_page(0)
+
+    def restart_application(self):
+        """重启应用程序"""
+        # 关闭当前应用
+        if self.main_window:
+            self.main_window.close()
+
+        # 重启应用
+        python = sys.executable  # 获取当前Python解释器路径
+        script = os.path.join(os.getcwd(), "main.py")  # 主程序路径
+
+        # 使用subprocess启动新进程
+        subprocess.Popen([python, script])
+
+        # 退出当前进程
+        QApplication.quit()

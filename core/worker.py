@@ -3,8 +3,8 @@ import time
 import json
 import requests
 from PyQt5.QtCore import QThread, pyqtSignal
-from config_manager import *
-from search_utils import baidu_search, SearchAssistant
+from core.config_manager import *
+from core.search_utils import baidu_search, SearchAssistant
 
 
 class Worker(QThread):

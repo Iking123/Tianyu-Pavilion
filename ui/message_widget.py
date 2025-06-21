@@ -5,7 +5,7 @@ from PyQt5.QtCore import Qt, QUrl, QTimer
 import time
 from . import markdown_utils  # 导入Markdown工具
 from .styles import *  # 导入样式
-from config_manager import get_config
+from core.config_manager import get_config
 from funcs import *
 from .highlight import *
 

@@ -2,7 +2,7 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QPalette, QColor
 from ui.main_window import MainWindow
-from config_manager import get_config
+from core.config_manager import get_config
 
 
 def main():

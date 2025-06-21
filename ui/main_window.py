@@ -11,12 +11,12 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QFont, QColor, QPalette
-from config_manager import get_config, update_config
+from core.config_manager import get_config, update_config
 from .home_page import HomePage
-from .chat_page import ChatPage
-from .novel_page import NovelPage
-from .interactive_novel_page import InteractiveNovelPage
-from .settings_page import SettingsPage
+from features.chat.chat_page import ChatPage
+from features.game.game_page import GamePage
+from features.interactive_novel.interactive_novel_page import InteractiveNovelPage
+from features.settings.settings_page import SettingsPage
 from .styles import *
 
 
@@ -26,7 +26,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("DeepSeek 多功能小应用")
-        self.setGeometry(100, 100, 1920, 1600)  # 设置与原始聊天窗口相同的大小
+        self.setGeometry(100, 100, 1800, 1600)  # 设置与原始聊天窗口相同的大小
 
         # 主部件
         central_widget = QWidget()
@@ -54,13 +54,13 @@ class MainWindow(QMainWindow):
         # 创建页面
         self.home_page = HomePage(self)
         self.chat_page = ChatPage(self)
-        self.novel_page = NovelPage(self)
+        self.game_page = GamePage(self)
         self.interactive_page = InteractiveNovelPage(self)
         self.settings_page = SettingsPage(self)
 
         self.stacked_widget.addWidget(self.home_page)
         self.stacked_widget.addWidget(self.chat_page)
-        self.stacked_widget.addWidget(self.novel_page)
+        self.stacked_widget.addWidget(self.game_page)
         self.stacked_widget.addWidget(self.interactive_page)
         self.stacked_widget.addWidget(self.settings_page)
 

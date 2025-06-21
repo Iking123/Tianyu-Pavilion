@@ -3,11 +3,15 @@ import time
 import requests
 from tavily import TavilyClient
 from openai import OpenAI
-from config_manager import *
+from core.config_manager import *
 
 # 初始化客户端
 client = OpenAI(api_key=get_config("api_key"), base_url=get_config("base_url"))
-tavily_client = TavilyClient(api_key=get_config("tavily_api_key"))
+tavily_client = None
+try:
+    tavily_client = TavilyClient(api_key=get_config("tavily_api_key"))
+except Exception:
+    pass
 headers = {
     "Authorization": f"Bearer {get_config("api_key")}",
     "Content-Type": "application/json",
