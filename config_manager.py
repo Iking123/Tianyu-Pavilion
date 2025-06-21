@@ -16,6 +16,7 @@ DEFAULT_CONFIG = {
     "enable_r1": False,
     "enable_tavily": False,
     "enable_baidu": True,
+    "speed_slider": 2,
 }
 
 

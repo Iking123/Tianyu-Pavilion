@@ -10,8 +10,8 @@ from funcs import *
 from .highlight import *
 
 
-class ChatMessageWidget(QWidget):
-    """聊天消息控件"""
+class MessageWidget(QWidget):
+    """通用的消息控件"""
 
     def __init__(
         self, role, content, is_thinking=False, parent=None
@@ -31,7 +31,7 @@ class ChatMessageWidget(QWidget):
             case "user":
                 role_name = "你"
             case "assistant":
-                role_name = "DeepSeek-R1"
+                role_name = f"DeepSeek-R1{"（思考）" if is_thinking else ""}"
             case "assistant-v3":
                 role_name = "DeepSeek-V3"
                 role = "assistant"
@@ -203,9 +203,9 @@ class ChatMessageWidget(QWidget):
 
     def adjust_height(self):
         """根据内容自动调整高度，同时保持宽度灵活性"""
-        # # 保存当前滚动位置
-        # scrollbar = self.content_browser.verticalScrollBar()
-        # old_position = scrollbar.value()
+        # 保存当前滚动位置
+        scrollbar = self.content_browser.verticalScrollBar()
+        old_position = scrollbar.value()
 
         doc = self.content_browser.document()
         doc_height = doc.size().height()
@@ -217,8 +217,8 @@ class ChatMessageWidget(QWidget):
         # 更新整个控件的大小提示
         self.updateGeometry()
 
-        # # 恢复滚动位置
-        # QTimer.singleShot(0, lambda: scrollbar.setValue(old_position))
+        # 恢复滚动位置
+        QTimer.singleShot(0, lambda: scrollbar.setValue(old_position))
 
     def handle_link_click(self, url):
         """处理链接点击 - 在外部浏览器打开"""

@@ -10,9 +10,11 @@ from search_utils import baidu_search, SearchAssistant
 class Worker(QThread):
     """后台工作线程，用于处理搜索和API调用"""
 
-    update_signal = pyqtSignal(str, str)  # 角色, 内容
+    update_signal = pyqtSignal(str, str, bool)  # 角色, 内容, 是否是思考内容
     status_signal = pyqtSignal(str)
     search_complete = pyqtSignal(str, str)  # 搜索类型, 结果
+    start_thinking = pyqtSignal()  # 开始思考信号
+    start_replying = pyqtSignal(str)  # 开始回复信号
 
     def __init__(self, user_input, conversation_history, pageIndex):
         super().__init__()
@@ -78,13 +80,21 @@ class Worker(QThread):
                 search_context += findings
 
         # ========== DeepSeek API请求 ==========
+        role = "assistant"
         # 根据配置选择模型
-        model_name = "deepseek-reasoner" if get_config("enable_r1") else "deepseek-chat"
+        if get_config("enable_r1"):
+            model_name = "deepseek-reasoner"
+        else:
+            model_name = "deepseek-chat"
+            role += "-v3"
+            # 若是V3则直接开始回复
+            self.start_replying.emit(role)
+            self.status_signal.emit("💬 正在生成回复...")
+
         if search_context:
             self.conversation_history.append(
                 {"role": "system", "content": search_context}
             )
-        self.status_signal.emit("💬 正在生成回复...")
 
         # 更新系统提示时间
         self.conversation_history[0]["content"] = get_system_prompt(self.pageIndex)
@@ -98,12 +108,12 @@ class Worker(QThread):
         try:
             # 发送流式请求
             headers = {
-                "Authorization": f"Bearer {get_config("api_key")}",
+                "Authorization": f"Bearer {get_config('api_key')}",
                 "Content-Type": "application/json",
             }
 
             response = requests.post(
-                f"{get_config("base_url")}/chat/completions",
+                f"{get_config('base_url')}/chat/completions",
                 json=payload,
                 headers=headers,
                 stream=True,
@@ -111,17 +121,11 @@ class Worker(QThread):
 
             if response.status_code != 200:
                 error_msg = f"请求失败 (状态码 {response.status_code}): {response.text}"
-                self.update_signal.emit("system", error_msg)
+                self.update_signal.emit("system", error_msg, False)
                 return
 
             full_response = ""
-            in_reasoning_block = False
-            role_name = "assistant"
-
-            # 如果助手是V3，则设置角色名为“assistant-v3”且一开始就创建回复控件
-            if not get_config("enable_r1"):
-                role_name += "-v3"
-                self.update_signal.emit(role_name, "===== 💬 回复开始 =====\n")
+            in_thinking = False
 
             # 处理流式响应
             for line in response.iter_lines():
@@ -137,25 +141,27 @@ class Worker(QThread):
                                 delta = chunk["choices"][0].get("delta", {})
                                 reasoning = delta.get("reasoning_content", "")
                                 content = delta.get("content", "")
+
                                 if reasoning:
                                     # 处理思考内容
-                                    if not in_reasoning_block:
-                                        # 使用特殊分隔符触发新控件创建
-                                        self.update_signal.emit(
-                                            role_name, "===== 🤔 思考开始 =====\n"
-                                        )
-                                        in_reasoning_block = True
-                                    # 发送实际思考内容
-                                    self.update_signal.emit(role_name, reasoning)
+                                    if not in_thinking:
+                                        # 发送开始思考信号
+                                        self.start_thinking.emit()
+                                        self.status_signal.emit("🤔 正在思考...")
+                                        in_thinking = True
+                                    # 发送思考内容
+                                    self.update_signal.emit(role, reasoning, True)
+
                                 elif content:
                                     # 处理回复内容
-                                    if in_reasoning_block:
-                                        # 思考结束，发送分隔符
-                                        self.update_signal.emit(
-                                            role_name, "===== 💬 回复开始 =====\n"
-                                        )
-                                        in_reasoning_block = False
-                                    self.update_signal.emit(role_name, content)
+                                    if in_thinking:
+                                        # 发送开始回复信号
+                                        self.start_replying.emit(role)
+                                        self.status_signal.emit("💬 正在生成回复...")
+                                        in_thinking = False
+                                    # 发送回复内容
+                                    self.update_signal.emit(role, content, False)
+                                    full_response += content
                         except json.JSONDecodeError:
                             continue
 
@@ -165,7 +171,7 @@ class Worker(QThread):
             self.status_signal.emit("✅ 回复生成完成")
 
         except requests.exceptions.RequestException as e:
-            self.update_signal.emit("system", f"\n网络请求错误: {str(e)}")
+            self.update_signal.emit("system", f"\n网络请求错误: {str(e)}", False)
 
     def stop(self):
         self.running = False

@@ -201,6 +201,18 @@ class MainWindow(QMainWindow):
         """获取滚动到底部按钮"""
         return self.scroll_button
 
+    def update_status(self, message=None):
+        """更新状态栏"""
+        config = get_config()
+        self.btn_r1.setChecked(config["enable_r1"])
+        self.btn_r1.setStyleSheet(self.get_button_style(config["enable_r1"]))
+        self.btn_tavily.setChecked(config["enable_tavily"])
+        self.btn_tavily.setStyleSheet(self.get_button_style(config["enable_tavily"]))
+        if message:
+            if not isinstance(message, str):
+                message = "就绪"
+            self.set_status(message)
+
     def closeEvent(self, event):
         """窗口关闭时清理所有页面资源"""
         # 清理聊天页面资源

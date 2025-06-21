@@ -87,10 +87,10 @@ class ChatPage(QWidget):
         # 设置布局策略
         self.chat_component.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        # 连接滚动按钮
-        if self.main_window:
-            scroll_button = self.main_window.get_scroll_button()
-            scroll_button.clicked.connect(self.chat_component.scroll_to_bottom)
+        # # 连接滚动按钮
+        # if self.main_window:
+        #     scroll_button = self.main_window.get_scroll_button()
+        #     scroll_button.clicked.connect(self.chat_component.scroll_to_bottom)
 
     def go_back(self):
         """返回主页"""
@@ -101,3 +101,11 @@ class ChatPage(QWidget):
         """清理资源"""
         if hasattr(self, "chat_component") and self.chat_component:
             self.chat_component.cleanup()
+
+    def showEvent(self, event):
+        """页面显示时自动设置焦点到聊天组件"""
+        super().showEvent(event)
+        self.chat_component.setFocus()
+        self.main_window.set_status(
+            "处理中..." if self.chat_component.worker_active else "就绪"
+        )

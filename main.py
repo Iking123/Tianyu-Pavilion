@@ -2,6 +2,7 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QPalette, QColor
 from ui.main_window import MainWindow
+from config_manager import get_config
 
 
 def main():
@@ -29,6 +30,9 @@ def main():
     app_font = app.font()
     app_font.setPointSize(11)
     app.setFont(app_font)
+
+    # 设置全局滚轮行数（默认3行）
+    app.setWheelScrollLines(3 * get_config("speed_slider"))
 
     # 创建主窗口
     window = MainWindow()
