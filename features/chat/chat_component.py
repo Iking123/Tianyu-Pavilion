@@ -64,7 +64,9 @@ class ChatComponent(QWidget):
 
         # 使用新的输入面板组件
         self.input_panel = InputPanel(
-            send_callback=self.send_message, clear_callback=self.clear_conversation
+            send_callback=self.send_message,
+            clear_callback=self.clear_conversation,
+            show_clear_button=True,
         )
         splitter.addWidget(self.input_panel)
 

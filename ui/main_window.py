@@ -19,6 +19,9 @@ from features.interactive_novel.interactive_novel_page import InteractiveNovelPa
 from features.settings.settings_page import SettingsPage
 from .styles import *
 
+# 新增导入
+from features.game.idiom_solitaire_page import IdiomSolitairePage
+
 
 class MainWindow(QMainWindow):
     """主窗口，包含主页和功能页面"""
@@ -54,15 +57,18 @@ class MainWindow(QMainWindow):
         # 创建页面
         self.home_page = HomePage(self)
         self.chat_page = ChatPage(self)
-        self.game_page = GamePage(self)
+        self.game_page = GamePage(self)  # 游戏列表页面
         self.interactive_page = InteractiveNovelPage(self)
         self.settings_page = SettingsPage(self)
 
         self.stacked_widget.addWidget(self.home_page)
         self.stacked_widget.addWidget(self.chat_page)
-        self.stacked_widget.addWidget(self.game_page)
+        self.stacked_widget.addWidget(self.game_page)  # 游戏列表页面
         self.stacked_widget.addWidget(self.interactive_page)
         self.stacked_widget.addWidget(self.settings_page)
+
+        # 存储游戏页面的字典
+        self.game_pages = {}
 
         # 默认显示主页
         self.switch_page(0)
@@ -219,3 +225,26 @@ class MainWindow(QMainWindow):
         self.chat_page.cleanup()
 
         super().closeEvent(event)
+
+    # ================== 新增游戏相关方法 ==================
+
+    def open_game_page(self, game_name):
+        """打开指定的游戏页面"""
+        if game_name not in self.game_pages:
+            # 根据游戏名称创建对应的游戏页面
+            if game_name == "成语接龙":
+                self.game_pages[game_name] = IdiomSolitairePage(self)
+                # 将新游戏页面添加到堆栈中
+                self.stacked_widget.addWidget(self.game_pages[game_name])
+            # 未来可以添加其他游戏页面
+            # elif game_name == "数学挑战":
+            #     self.game_pages[game_name] = MathChallengePage(self)
+            #     self.stacked_widget.addWidget(self.game_pages[game_name])
+
+        if game_name in self.game_pages:
+            # 切换到游戏页面
+            self.stacked_widget.setCurrentWidget(self.game_pages[game_name])
+
+    def switch_to_game_list(self):
+        """切换到游戏列表页面"""
+        self.stacked_widget.setCurrentWidget(self.game_page)

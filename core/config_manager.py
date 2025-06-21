@@ -124,6 +124,11 @@ def get_username(show_developer=True):
     )
 
 
+def get_assist():
+    """获取现在的助手名"""
+    return "assistant" if get_config("enable_r1") else "assistant-v3"
+
+
 SYSTEM_PROMPT = [
     "",
     [

@@ -1,4 +1,3 @@
-# message_display.py
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QSizePolicy
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QTextCursor
@@ -47,9 +46,11 @@ class MessageDisplayArea(QWidget):
         widget = MessageWidget(role, content, is_thinking)
         return self.add_message(widget)
 
-    def start_assistant_message(self, role, content):
+    def start_assistant_message(self, role, content, is_thinking=False):
         """开始一个新的助手消息"""
-        self.current_assistant_widget = self.add_message_by_role(role, content)
+        self.current_assistant_widget = self.add_message_by_role(
+            role, content, is_thinking
+        )
         return self.current_assistant_widget
 
     def append_to_assistant_message(self, content):
@@ -179,3 +180,22 @@ class MessageDisplayArea(QWidget):
         )
         self.highlight_current_match()
         return self.current_match_index + 1
+
+    def get_last_message(self):
+        """获取最后一条消息"""
+        count = self.container_layout.count()
+        if count > 0:
+            item = self.container_layout.itemAt(count - 1)
+            if item and item.widget():
+                return item.widget()
+        return None
+
+    def remove_last_n_messages(self, n=1):
+        """移除最后n条消息"""
+        for _ in range(n):
+            widget = self.get_last_message()
+            if widget:
+                self.container_layout.removeWidget(widget)
+                widget.deleteLater()
+            else:
+                break

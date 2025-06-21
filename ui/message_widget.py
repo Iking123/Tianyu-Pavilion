@@ -163,7 +163,7 @@ class MessageWidget(QWidget):
                     font-size: 11pt;
                 }
             """
-        else:
+        elif role == "system":
             return """
                 QTextBrowser {
                     background-color: #F8F8F8;
@@ -175,6 +175,17 @@ class MessageWidget(QWidget):
                     font-size: 11pt;
                 }
             """
+        else:
+            return """
+                QTextBrowser {
+                    background-color: #F8F8F8;
+                    border: 1px solid #E0E0E0;
+                    border-radius: 8px;
+                    padding: 12px;
+                    color: #666;
+                    font-size: 11pt;
+                }
+        """
 
     def set_content(self, content, role):
         """设置内容并渲染"""
@@ -217,8 +228,11 @@ class MessageWidget(QWidget):
         # 更新整个控件的大小提示
         self.updateGeometry()
 
-        # 恢复滚动位置
-        QTimer.singleShot(0, lambda: scrollbar.setValue(old_position))
+        try:
+            # 恢复滚动位置
+            QTimer.singleShot(0, lambda: scrollbar.setValue(old_position))
+        except Exception:
+            pass
 
     def handle_link_click(self, url):
         """处理链接点击 - 在外部浏览器打开"""

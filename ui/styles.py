@@ -207,6 +207,7 @@ THINKING_STYLE = """
 
 # 不同角色的消息样式
 MESSAGE_STYLES = {
+    "": """color: #4A90E2;""",
     "assistant": """color: #50B7C1;""",
     "user": """color: #888;""",
     "system": """color: #4A90E2;""",
