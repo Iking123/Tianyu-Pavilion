@@ -11,11 +11,11 @@ DEFAULT_CONFIG = {
     "base_url": "https://api.deepseek.com/v1",
     "api_key": "你的deepseek api",
     "tavily_api_key": "你的tavily api",
-    "original_system_prompt": "你是一个智能助手，在一个个人平台上与用户交流。若用户提问涉及最新信息，则平台可能会为你提供百度搜索的简要结果，还可能提供调用Tavily API搜索到的结果，辅助你更好地解答。",
-    "render_threshold": 2,
+    "render_threshold": 0.3,
     "username": "",
     "enable_r1": False,
     "enable_tavily": False,
+    "enable_baidu": True,
 }
 
 
@@ -55,11 +55,28 @@ def get_username(show_developer=True):
     )
 
 
-def get_system_prompt():
-    """获取系统提示，带时间，也可能带用户名"""
-    prompt = f"{get_config("original_system_prompt")}\n当前时间：{time.asctime()}"
-    name = get_username()
-    return f"{prompt}\n用户名：{name}" if name else prompt
+SYSTEM_PROMPT = [
+    "",
+    [
+        [
+            "由于用户的设置，你暂时无法联网。",
+            "若用户提问涉及最新信息，则平台可能会为你提供调用Tavily API搜索到的结果，辅助你更好地解答。",
+        ],
+        [
+            "若用户提问涉及最新信息，则平台可能会为你提供百度搜索的简要结果，辅助你更好地解答。",
+            "若用户提问涉及最新信息，则平台可能会为你提供百度搜索的简要结果，还可能提供调用Tavily API搜索到的结果，辅助你更好地解答。",
+        ],
+    ],
+]
+
+
+def get_system_prompt(p=1):
+    """获取系统提示，可能含时间与用户名"""
+    match p:
+        case 1:
+            prompt = f"你是一个智能助手，在一个个人平台上与用户交流。{SYSTEM_PROMPT[p][get_config("enable_baidu")][get_config("enable_tavily")]}\n当前时间：{time.asctime()}"
+            name = get_username()
+            return f"{prompt}\n用户名：{name}" if name else prompt
 
 
 def update_config(new_config):

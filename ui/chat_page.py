@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QLabel,
-    QSpacerItem,  # 添加此项
+    QSpacerItem,
 )
 from PyQt5.QtGui import QIcon, QFont
 from .chat_component import ChatComponent

@@ -288,7 +288,7 @@ class ChatComponent(QWidget):
         self.input_field.clear()
 
         # 创建并启动工作线程
-        self.worker = Worker(user_input, self.conversation_history)
+        self.worker = Worker(user_input, self.conversation_history, 1)
         self.worker.update_signal.connect(self.add_message)
         # self.worker.status_signal.connect(self.status_label.setText)
         self.worker.search_complete.connect(self.add_search_result)

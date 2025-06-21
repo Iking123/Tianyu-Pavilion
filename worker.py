@@ -14,10 +14,11 @@ class Worker(QThread):
     status_signal = pyqtSignal(str)
     search_complete = pyqtSignal(str, str)  # 搜索类型, 结果
 
-    def __init__(self, user_input, conversation_history):
+    def __init__(self, user_input, conversation_history, pageIndex):
         super().__init__()
         self.user_input = user_input
         self.conversation_history = conversation_history
+        self.pageIndex = pageIndex
         self.running = True
 
     def run(self):
@@ -86,7 +87,7 @@ class Worker(QThread):
         self.status_signal.emit("💬 正在生成回复...")
 
         # 更新系统提示时间
-        self.conversation_history[0]["content"] = get_system_prompt()
+        self.conversation_history[0]["content"] = get_system_prompt(self.pageIndex)
 
         payload = {
             "model": model_name,
