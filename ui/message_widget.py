@@ -1,7 +1,6 @@
-import re
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QTextBrowser, QSizePolicy
 from PyQt5.QtGui import QFont, QTextCursor, QDesktopServices, QTextCharFormat, QColor
-from PyQt5.QtCore import Qt, QUrl, QTimer
+from PyQt5.QtCore import Qt, QUrl, QTimer, QObject
 import time
 from . import markdown_utils  # 导入Markdown工具
 from .styles import *  # 导入样式
@@ -10,13 +9,13 @@ from funcs import *
 from .highlight import *
 
 
+@delay_update
 class MessageWidget(QWidget):
     """通用的消息控件"""
 
-    def __init__(
-        self, role, content, is_thinking=False, parent=None
-    ):  # 添加 is_thinking 参数
+    def __init__(self, role, content, is_thinking=False, parent=None):
         super().__init__(parent)
+        self.message_display = parent
         self.is_thinking = is_thinking  # 标识是否是思考内容
         # 设置大小策略 - 水平扩展，垂直固定
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -217,6 +216,7 @@ class MessageWidget(QWidget):
         # 保存当前滚动位置
         scrollbar = self.content_browser.verticalScrollBar()
         old_position = scrollbar.value()
+        recover = old_position != scrollbar.maximum()
 
         doc = self.content_browser.document()
         doc_height = doc.size().height()
@@ -226,13 +226,15 @@ class MessageWidget(QWidget):
         self.content_browser.setMinimumHeight(new_height)
 
         # 更新整个控件的大小提示
-        self.updateGeometry()
+        self.request_delayed_update()
 
-        try:
-            # 恢复滚动位置
-            QTimer.singleShot(0, lambda: scrollbar.setValue(old_position))
-        except Exception:
-            pass
+        # 若原本不在最底则恢复滚动位置，否则滑到底
+        if recover:
+            QTimer.singleShot(0, lambda: safe_scroll(scrollbar, old_position))
+        else:
+            display = self.message_display
+            if display and display.get_last_message() == self:
+                display.scroll_to_bottom()
 
     def handle_link_click(self, url):
         """处理链接点击 - 在外部浏览器打开"""

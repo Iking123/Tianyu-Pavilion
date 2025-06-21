@@ -19,6 +19,7 @@ class InputPanel(QWidget):
         clear_callback=None,
         show_clear_button=False,
         threshold=None,
+        placeholder="输入消息...",
         parent=None,
     ):
         super().__init__(parent)
@@ -28,6 +29,7 @@ class InputPanel(QWidget):
             show_clear_button  # 我们只在聊天页面中显示清除按钮，其他页面不显示
         )
         self.threshold = threshold
+        self.placeholder = placeholder
         self.init_ui()
 
     def init_ui(self):
@@ -37,7 +39,7 @@ class InputPanel(QWidget):
 
         # 用户输入框
         self.input_field = QTextEdit()
-        self.input_field.setPlaceholderText("输入消息...")
+        self.input_field.setPlaceholderText(self.placeholder)
         self.input_field.setMinimumHeight(100)
         input_font = QFont()
         input_font.setPointSize(12)

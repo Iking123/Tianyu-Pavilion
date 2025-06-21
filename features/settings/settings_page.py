@@ -157,11 +157,11 @@ class SettingsPage(QWidget):
         self.render_threshold_input.setText(str(get_config("render_threshold")))
         form_layout.addRow("节流控制阈值（单位：秒）：", self.render_threshold_input)
 
-        # 鼠标滚动速度倍数下拉框
+        # 鼠标滚动速度输入栏
         self.speed_slider_input = QComboBox()
-        self.speed_slider_input.addItems([str(i) for i in range(1, 6)])
+        self.speed_slider_input.addItems([str(i) for i in range(1, 16)])
         self.speed_slider_input.setCurrentText(str(get_config("speed_slider")))
-        form_layout.addRow("鼠标滚动速度倍数：", self.speed_slider_input)
+        form_layout.addRow("鼠标滚动速度：", self.speed_slider_input)
 
         form_layout.addRow(empty_space)
 
@@ -223,7 +223,7 @@ class SettingsPage(QWidget):
         new_config["enable_tavily"] = enable_tavily
         new_config["enable_baidu"] = enable_baidu
         new_config["render_threshold"] = render_threshold
-        new_config["speed_slider"] = speed_slider  # 保存鼠标滚动速度倍数
+        new_config["speed_slider"] = speed_slider  # 保存鼠标滚动速度
 
         # 保存配置
         update_config(new_config)

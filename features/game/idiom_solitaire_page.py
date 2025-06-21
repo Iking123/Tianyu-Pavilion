@@ -152,7 +152,7 @@ class IdiomSolitairePage(QWidget):
 
         # 输入区域
         self.input_panel = InputPanel(
-            send_callback=self.handle_player_input, threshold=4
+            send_callback=self.handle_player_input, threshold=4, placeholder="输入成语"
         )
         self.input_panel.setStyleSheet(
             "background-color: #F8F9FA; border-radius: 10px;"
@@ -314,6 +314,8 @@ class IdiomSolitairePage(QWidget):
 
         # 创建并启动工作线程
         self.worker = IdiomWorker(system_prompt, self.current_idiom, self.used_idioms)
+        self.worker.status_signal.connect(self.main_window.set_status)
+        self.worker.search_complete.connect(self.message_display.add_search_result)
         self.worker.finished.connect(self.handle_ai_response)
         self.worker.thinking_received.connect(self.handle_thinking_content)
         self.worker.error.connect(self.handle_ai_error)

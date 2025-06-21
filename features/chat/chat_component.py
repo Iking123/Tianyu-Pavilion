@@ -86,13 +86,14 @@ class ChatComponent(QWidget):
         self.search_timer.setSingleShot(True)
         self.search_timer.timeout.connect(self.perform_search)
 
-        # # 渲染测试
-        # self.start_replying("assistant")
-        # self.add_message("assistant", "# 标题\n")
-        # self.add_message("assistant", "- 列表1\n")
-        # self.add_message("assistant", "- 列表2\n")
-        # self.add_message("assistant", "* 列表3\n")
-        # self.message_display.finish_assistant_message()
+        # 渲染测试
+        self.start_replying("assistant")
+        self.add_message_content("assistant", "**渲染测试**\n")
+        self.add_message_content("assistant", "# 标题\n")
+        self.add_message_content("assistant", "- 列表1\n")
+        self.add_message_content("assistant", "- 列表2\n")
+        self.add_message_content("assistant", "* 列表3\n")
+        self.message_display.finish_assistant_message()
 
     def safe_update_time(self):
         """安全更新时间显示"""
@@ -135,9 +136,9 @@ class ChatComponent(QWidget):
         self.worker = Worker(user_input, self.conversation_history, 1)
         self.worker.start_thinking.connect(self.start_thinking)
         self.worker.start_replying.connect(self.start_replying)
-        self.worker.update_signal.connect(self.add_message)
+        self.worker.update_signal.connect(self.add_message_content)
         self.worker.status_signal.connect(self.main_window.set_status)
-        self.worker.search_complete.connect(self.add_search_result)
+        self.worker.search_complete.connect(self.message_display.add_search_result)
         self.worker.finished.connect(self.on_worker_finished)
         self.worker.start()
 
@@ -160,8 +161,8 @@ class ChatComponent(QWidget):
         self.message_display.start_assistant_message(role, "")
         self.message_display.scroll_to_bottom()
 
-    def add_message(self, role, content, is_thinking=False):
-        """添加消息到聊天界面"""
+    def add_message_content(self, role, content, is_thinking=False):
+        """添加消息内容到聊天界面"""
         if role and role.startswith("assistant"):
             if is_thinking:
                 # 追加到思考控件
@@ -174,10 +175,6 @@ class ChatComponent(QWidget):
             # 其他消息直接添加并滚动
             self.message_display.add_message_by_role(role, content)
             self.message_display.scroll_to_bottom()
-
-    def add_search_result(self, search_type, result):
-        """添加搜索结果到聊天界面"""
-        self.message_display.add_message_by_role("system", f"网络搜索结果:\n{result}")
 
     def on_worker_finished(self):
         """工作线程完成时调用"""

@@ -31,8 +31,8 @@ def main():
     app_font.setPointSize(11)
     app.setFont(app_font)
 
-    # 设置全局滚轮行数（默认3行）
-    app.setWheelScrollLines(3 * get_config("speed_slider"))
+    # 设置全局滚轮速率
+    app.setWheelScrollLines(get_config("speed_slider"))
 
     # 创建主窗口
     window = MainWindow()

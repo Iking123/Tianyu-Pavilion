@@ -43,7 +43,7 @@ class MessageDisplayArea(QWidget):
 
     def add_message_by_role(self, role, content, is_thinking=False):
         """通过角色和内容添加消息"""
-        widget = MessageWidget(role, content, is_thinking)
+        widget = MessageWidget(role, content, is_thinking, parent=self)
         return self.add_message(widget)
 
     def start_assistant_message(self, role, content, is_thinking=False):
@@ -199,3 +199,7 @@ class MessageDisplayArea(QWidget):
                 widget.deleteLater()
             else:
                 break
+
+    def add_search_result(self, result):
+        """添加搜索结果到聊天界面"""
+        self.add_message_by_role("system", f"网络搜索结果:\n{result}")

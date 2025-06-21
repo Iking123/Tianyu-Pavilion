@@ -3,11 +3,14 @@ import json
 from PyQt5.QtCore import QThread, pyqtSignal
 import requests
 from core.config_manager import get_config
+from core.search_utils import baidu_search
 
 
 class IdiomWorker(QThread):
     """专门用于成语接龙API调用的Worker，支持流式处理思考内容"""
 
+    status_signal = pyqtSignal(str)
+    search_complete = pyqtSignal(str, str)  # 搜索类型, 结果
     finished = pyqtSignal(dict)  # 返回解析后的JSON
     thinking_received = pyqtSignal(str)  # 思考内容信号
     error = pyqtSignal(str)  # 错误信号
@@ -30,6 +33,12 @@ class IdiomWorker(QThread):
             messages = [
                 {"role": "system", "content": self.system_prompt},
             ]
+
+            # self.status_signal.emit("🔍 正在通过百度搜索并提取内容...")
+            # search_results = baidu_search(self.current_idiom)
+            # if search_results:
+            #     self.search_complete.emit("百度搜索", search_results)
+            #     messages.append({"role": "system", "content": search_results})
 
             payload = {
                 "model": (

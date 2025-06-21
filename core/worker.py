@@ -12,7 +12,7 @@ class Worker(QThread):
 
     update_signal = pyqtSignal(str, str, bool)  # 角色, 内容, 是否是思考内容
     status_signal = pyqtSignal(str)
-    search_complete = pyqtSignal(str, str)  # 搜索类型, 结果
+    search_complete = pyqtSignal(str)  # 结果
     start_thinking = pyqtSignal()  # 开始思考信号
     start_replying = pyqtSignal(str)  # 开始回复信号
 
@@ -68,7 +68,7 @@ class Worker(QThread):
             search_results = baidu_search(self.user_input)
             if search_results:
                 search_context = search_results
-                self.search_complete.emit("百度搜索", search_results)
+                self.search_complete.emit(search_results)
 
         # ========== Tavily搜索处理 ==========
         if get_config("enable_tavily"):  # 只在启用 Tavily 时执行
@@ -76,7 +76,7 @@ class Worker(QThread):
             assistant = SearchAssistant(search_context)
             findings = assistant.search(depth=3, user_input=self.user_input)
             if findings:
-                self.search_complete.emit("Tavily搜索", findings)
+                self.search_complete.emit(findings)
                 search_context += findings
 
         # ========== DeepSeek API请求 ==========

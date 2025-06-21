@@ -23,7 +23,7 @@ DEFAULT_CONFIG = {
     "enable_r1": False,
     "enable_tavily": False,
     "enable_baidu": True,
-    "speed_slider": 2,
+    "speed_slider": 8,
 }
 
 # 真正的版本
