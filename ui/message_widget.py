@@ -9,7 +9,6 @@ from funcs import *
 from .highlight import *
 
 
-@delay_update
 class MessageWidget(QWidget):
     """通用的消息控件"""
 
@@ -83,7 +82,6 @@ class MessageWidget(QWidget):
         self.raw_content = content
         self.role = role
         self.last_render_time = 0
-        self.render_threshold = 0  # 默认不节流
         self.search_term = ""
 
         # 添加高度调整计时器
@@ -113,13 +111,10 @@ class MessageWidget(QWidget):
         """追加新内容并重新渲染"""
         self.raw_content += new_content
 
-        # 更新最后接收内容的时间
-        self.last_content_time = time.time()
-
         # 节流控制
         current_time = time.time()
         char_count = len(self.raw_content)
-        dynamic_threshold = max(0.05, char_count / 100000)  # 每100字符增加1ms节流时间
+        dynamic_threshold = max(0.5, char_count / 100000)  # 每100字符增加1ms节流时间
         if current_time - self.last_render_time > dynamic_threshold:
             self.render_content()
             self.last_render_time = current_time
@@ -213,12 +208,17 @@ class MessageWidget(QWidget):
         # 启动新的计时器（延迟200毫秒）
         self.height_adjust_timer.start(200)
 
+        self.adjust_height()
+
     def adjust_height(self):
         """根据内容自动调整高度，同时保持宽度灵活性"""
-        # 保存当前滚动位置
-        scrollbar = self.content_browser.verticalScrollBar()
-        old_position = scrollbar.value()
-        recover = old_position != scrollbar.maximum()
+        # 判断当前页面的滚动条位置是否在最底
+        if self.message_display == None:
+            bottom = False
+        else:
+            scrollbar = self.message_display.scroll_area.verticalScrollBar()
+            old_position = scrollbar.value()
+            bottom = old_position == scrollbar.maximum()
 
         doc = self.content_browser.document()
         doc_height = doc.size().height()
@@ -228,15 +228,11 @@ class MessageWidget(QWidget):
         self.content_browser.setMinimumHeight(new_height)
 
         # 更新整个控件的大小提示
-        self.request_delayed_update()
+        self.updateGeometry()
+        self.update()
 
-        # 若原本不在最底则恢复滚动位置，否则滑到底
-        if recover:
-            QTimer.singleShot(0, lambda: safe_scroll(scrollbar, old_position))
-        else:
-            display = self.message_display
-            if display and display.get_last_message() == self:
-                display.scroll_to_bottom()
+        if bottom:
+            execute_repeatedly(self.message_display.scroll_to_bottom)
 
     def handle_link_click(self, url):
         """处理链接点击 - 在外部浏览器打开"""

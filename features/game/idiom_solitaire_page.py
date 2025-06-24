@@ -283,7 +283,9 @@ class IdiomSolitairePage(QWidget):
         system_prompt = f"""
         你正在与玩家进行成语接龙，规则如下：
         - 只能用四字成语，必须确保是成语
-        - 成语的首字必须接上一个成语的末字（可用同音字，发音完全相同，包括音调）
+        - 成语的首字必须接上一个成语的末字（可用同音字，须发音完全相同，包括音调）
+        - （例如，若玩家说“泣血稽顙”，则你不可接“桑弧蓬矢”，因为顙(sǎng)与桑(sāng)音调不同）
+        - （又如，若玩家说“牙签万轴”，则你不可接“轴轳千里”，因为此处“轴轳”通假“舳舻”，念zhú lú，接不上zhóu）
         - 不能重复使用已用过的成语
         
         当前接龙记录：
@@ -291,16 +293,16 @@ class IdiomSolitairePage(QWidget):
         
         请严格按照以下JSON格式回应：
         {{
-            "respondentIdiom": "你接龙的成语（四字，或空字符串）",
+            "respondent": "你接龙的成语（四字，或空字符串）",
             "conclusions": "结束语（如果游戏应结束，否则空字符串）",
             "playerWin": bool,
         }}
         
         回应规则：
-        ⒈若你发现上一次用户回复是指出AI错误，则你必须检查AI最后一次是否错了，如果确实错了，则玩家获胜，respondentIdiom留空，conclusions承认错误，playerWin填true；如果其实没错，则在conclusions中说明玩家乱说，playerWin填false
-        ⒉若你能接龙，请填写respondentIdiom字段（四字成语），conclusions留空，playerWin填false
-        ⒊若你认为玩家输了（你发现玩家回复并非成语、没有接上等等），respondentIdiom留空，conclusions解释玩家的错误所在，playerWin填false
-        ⒋若你无法接龙，respondentIdiom留空，conclusions填写认输语，playerWin填true
+        ⒈若你发现上一次用户回复是指出AI错误，则你必须检查AI最后一次是否错了，如果确实错了，则玩家获胜，respondent留空，conclusions承认错误，playerWin填true；如果其实没错，则在conclusions中说明玩家乱说，playerWin填false
+        ⒉若你能接龙，请填写respondent字段（四字成语），conclusions留空，playerWin填false
+        ⒊若你认为玩家输了（你发现玩家回复并非成语、没有接上等等），respondent留空，conclusions解释玩家的错误所在，playerWin填false
+        ⒋若你无法接龙，respondent留空，conclusions填写认输语，playerWin填true
         ⒌你必须尽快回复，别让玩家久等
         """
 
@@ -343,7 +345,7 @@ class IdiomSolitairePage(QWidget):
         """处理AI的JSON响应"""
         try:
             # 解析JSON响应
-            respondent_idiom = response.get("respondentIdiom", "").strip()
+            respondent_idiom = response.get("respondent", "").strip()
             conclusions = response.get("conclusions", "").strip()
             player_win = response.get("playerWin", False)
 
