@@ -18,7 +18,6 @@ DEFAULT_CONFIG = {
     "base_url": "https://api.deepseek.com/v1",
     "api_key": "",
     "tavily_api_key": "",
-    "render_threshold": 0.3,
     "username": "",
     "enable_r1": False,
     "enable_tavily": False,

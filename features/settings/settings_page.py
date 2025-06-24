@@ -147,16 +147,6 @@ class SettingsPage(QWidget):
         self.baidu_checkbox.setChecked(get_config("enable_baidu"))
         form_layout.addRow(self.baidu_checkbox)
 
-        # 节流控制阈值输入栏
-        self.render_threshold_input = QLineEdit()
-        self.render_threshold_input.setValidator(QDoubleValidator(0, 3, 2))
-        self.render_threshold_input.setPlaceholderText("输入节流控制阈值")
-        self.render_threshold_input.setToolTip(
-            "范围0-3，至多2位小数（调高有助于防抖与节省性能，但会增长渲染延迟）"
-        )
-        self.render_threshold_input.setText(str(get_config("render_threshold")))
-        form_layout.addRow("节流控制阈值（单位：秒）：", self.render_threshold_input)
-
         # 鼠标滚动速度输入栏
         self.speed_slider_input = QComboBox()
         self.speed_slider_input.addItems([str(i) for i in range(1, 16)])
@@ -208,7 +198,6 @@ class SettingsPage(QWidget):
             enable_r1 = self.r1_checkbox.isChecked()
             enable_tavily = self.tavily_checkbox.isChecked()
             enable_baidu = self.baidu_checkbox.isChecked()
-            render_threshold = float(self.render_threshold_input.text().strip())
             speed_slider = int(self.speed_slider_input.currentText())
         except Exception:
             QMessageBox.warning(self, "保存失败", "您可能输入错了什么东西？")
@@ -222,7 +211,6 @@ class SettingsPage(QWidget):
         new_config["enable_r1"] = enable_r1
         new_config["enable_tavily"] = enable_tavily
         new_config["enable_baidu"] = enable_baidu
-        new_config["render_threshold"] = render_threshold
         new_config["speed_slider"] = speed_slider  # 保存鼠标滚动速度
 
         # 保存配置

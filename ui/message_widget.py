@@ -83,7 +83,7 @@ class MessageWidget(QWidget):
         self.raw_content = content
         self.role = role
         self.last_render_time = 0
-        self.render_threshold = get_config("render_threshold")
+        self.render_threshold = 0  # 默认不节流
         self.search_term = ""
 
         # 添加高度调整计时器
@@ -118,7 +118,9 @@ class MessageWidget(QWidget):
 
         # 节流控制
         current_time = time.time()
-        if current_time - self.last_render_time > self.render_threshold:
+        char_count = len(self.raw_content)
+        dynamic_threshold = max(0.05, char_count / 100000)  # 每100字符增加1ms节流时间
+        if current_time - self.last_render_time > dynamic_threshold:
             self.render_content()
             self.last_render_time = current_time
 

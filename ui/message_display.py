@@ -123,35 +123,46 @@ class MessageDisplayArea(QWidget):
 
         return len(self.search_matches)
 
+    def get_text_position_y(self, widget, position):
+        """获取文本位置在容器中的绝对Y坐标"""
+        # 获取文本在消息控件中的位置
+        cursor = widget.content_browser.textCursor()
+        cursor.setPosition(position)
+        rect = widget.content_browser.cursorRect(cursor)
+
+        # 转换为容器坐标系
+        point_in_widget = widget.content_browser.mapTo(widget, rect.topLeft())
+        point_in_container = widget.mapTo(self.container, point_in_widget)
+        return point_in_container.y()
+
     def highlight_current_match(self):
-        """高亮当前匹配项并滚动到位置"""
+        """高亮当前匹配项并精确滚动到位置"""
         if not self.search_matches or self.current_match_index < 0:
             return
 
         # 获取当前匹配项
         widget, position, length = self.search_matches[self.current_match_index]
 
-        # 滚动到该消息
-        self.scroll_to_widget(widget)
-
         # 高亮匹配项
         cursor = widget.content_browser.textCursor()
         cursor.setPosition(position)
         cursor.setPosition(position + length, QTextCursor.KeepAnchor)
         widget.content_browser.setTextCursor(cursor)
-        widget.content_browser.ensureCursorVisible()
 
-    def scroll_to_widget(self, widget):
-        """滚动到指定控件"""
-        # 确保小部件可见
-        self.scroll_area.ensureWidgetVisible(widget)
+        # 获取精确的Y坐标
+        target_y = self.get_text_position_y(widget, position)
 
-        # 计算位置
+        # 计算视口位置（居中显示）
+        viewport_height = self.scroll_area.viewport().height()
+        scroll_value = target_y - viewport_height // 2
+
+        # 设置滚动位置（确保在合法范围内）
         scrollbar = self.scroll_area.verticalScrollBar()
-        widget_y = widget.mapTo(self.container, widget.pos()).y()
+        scroll_value = max(0, min(scroll_value, scrollbar.maximum()))
+        scrollbar.setValue(scroll_value)
 
-        # 滚动到位置
-        scrollbar.setValue(widget_y - 100)  # 添加一点偏移
+        # 确保光标可见（二次保险）
+        widget.content_browser.ensureCursorVisible()
 
     def clear_all_highlights(self):
         """清除所有高亮"""
