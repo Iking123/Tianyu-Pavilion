@@ -208,7 +208,7 @@ class MessageWidget(QWidget):
             new_height = int(doc_height) + 30  # 30px缓冲
 
             # 仅当需要更新时更新
-            if doc_height < new_height:
+            if self.content_browser.minimumHeight() < new_height:
                 self.content_browser.setMinimumHeight(new_height)
                 self.request_delayed_update()
 

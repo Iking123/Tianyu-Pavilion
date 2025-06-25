@@ -148,7 +148,7 @@ def get_system_prompt(p=1):
 
     # 根据配置添加Tavily搜索说明
     if get_config("enable_tavily"):
-        prompt += "Tavily是一个联网搜索API，你可用 `tavily_search` 函数进行深度调查。调用函数时必须严格写有效JSON格式。"
+        prompt += "Tavily是一个联网搜索API，你可用tavily_search函数进行深度调查。调用函数时必须严格写有效JSON格式。"
 
     # 添加当前时间
     prompt += f"\n\n当前时间：{time.asctime()}"

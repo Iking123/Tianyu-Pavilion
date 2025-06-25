@@ -32,6 +32,87 @@ APP_STYLESHEET = """
     }
 """
 
+ENHANCED_SCROLLBAR_STYLE = """
+/* 垂直滚动条整体 */
+QScrollBar:vertical {
+    border: none;
+    background: #F5F5F5;
+    width: 16px;         /* 增加整体宽度 */
+    margin: 0px;
+    border-radius: 8px;  /* 相应调整背景圆角 */
+}
+
+/* 垂直滚动条滑块 - 关键修改：让border-radius等于宽度的一半 */
+QScrollBar::handle:vertical {
+    background: #A0A0A0;
+    min-height: 40px;
+    border-radius: 6px;  /* 12px宽度的一半 */
+    margin: 2px 2px;     /* 左右边距设为2px，让滑块实际宽度为16px */
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #808080;
+    border-radius: 6px;  /* 保持一致 */
+}
+
+QScrollBar::handle:vertical:pressed {
+    background: #606060;
+    border-radius: 6px;  /* 保持一致 */
+}
+
+/* 移除上下箭头 */
+QScrollBar::add-line:vertical, 
+QScrollBar::sub-line:vertical {
+    height: 0px;
+    background: none;
+    border: none;
+}
+
+/* 移除滑块周围的空间 */
+QScrollBar::add-page:vertical, 
+QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+/* 水平滚动条（如果需要的话）*/
+QScrollBar:horizontal {
+    border: none;
+    background: #F5F5F5;
+    height: 16px;        /* 增加整体高度 */
+    margin: 0px;
+    border-radius: 8px;  /* 相应调整背景圆角 */
+}
+
+QScrollBar::handle:horizontal {
+    background: #A0A0A0;
+    min-width: 40px;
+    border-radius: 6px;  /* 12px高度的一半 */
+    margin: 2px 2px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: #808080;
+    border-radius: 6px;
+}
+
+QScrollBar::handle:horizontal:pressed {
+    background: #606060;
+    border-radius: 6px;
+}
+
+QScrollBar::add-line:horizontal, 
+QScrollBar::sub-line:horizontal {
+    width: 0px;
+    background: none;
+    border: none;
+}
+
+QScrollBar::add-page:horizontal, 
+QScrollBar::sub-page:horizontal {
+    background: none;
+}
+"""
+
 INPUT_STYLE = """
     QTextEdit {
         border: 1px solid #CCCCCC;
