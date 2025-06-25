@@ -273,12 +273,14 @@ class Worker(QThread):
 
                         # 执行对应的函数
                         if function_name == "tavily_search":
-                            result = tavily_search(function_args.get("query", ""))
+                            result, formatted = tavily_search(
+                                function_args.get("query", "")
+                            )
                         else:
-                            result = f"⚠️ 未知函数: {function_name}"
+                            result, formatted = f"⚠️ 未知函数: {function_name}", ""
 
-                        # 发送搜索结果
-                        self.search_complete.emit(result)
+                        # 发送格式化后的搜索结果
+                        self.search_complete.emit(formatted)
 
                         # 将函数结果添加到对话历史
                         self.conversation_history.append(
@@ -286,7 +288,7 @@ class Worker(QThread):
                                 "role": "tool",
                                 "tool_call_id": tool_call["id"],
                                 "name": function_name,
-                                "content": result,
+                                "content": json.dumps(result, ensure_ascii=False),
                             }
                         )
 

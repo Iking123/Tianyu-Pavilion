@@ -71,9 +71,9 @@ class GameCard(QFrame):
         layout.addLayout(info_layout, 1)  # 添加伸缩因子使描述区域可以扩展
 
         # 游戏按钮
-        self.play_button = QPushButton("开始游戏")
-        self.play_button.setFixedSize(120, 40)
-        self.play_button.setFont(QFont("Arial", 11))
+        self.play_button = QPushButton("开始\n游戏")
+        self.play_button.setFixedSize(80, 80)
+        self.play_button.setFont(QFont("Arial", 10))
         self.play_button.setStyleSheet(
             """
             QPushButton {

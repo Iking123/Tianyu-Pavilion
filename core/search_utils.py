@@ -66,7 +66,7 @@ def tavily_search(query):
         formatted = formatted.strip()
         print("\n")
         print(formatted)
-        return formatted
+        return results, formatted
 
     except Exception as e:
         return f"⚠️ Tavily搜索失败: {str(e)}"
