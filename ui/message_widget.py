@@ -9,11 +9,13 @@ from funcs import *
 from .highlight import *
 
 
+@delay_update
 class MessageWidget(QWidget):
     """通用的消息控件"""
 
     def __init__(self, role, content, is_thinking=False, parent=None):
         super().__init__(parent)
+        self._adjusting = False
         self.message_display = parent
         self.is_thinking = is_thinking  # 标识是否是思考内容
         # 设置大小策略 - 水平扩展，垂直固定
@@ -64,9 +66,6 @@ class MessageWidget(QWidget):
         # 设置内容 - 使用 Markdown 渲染
         self.set_content(content, role)
 
-        # 设置基础样式
-        self.content_browser.setStyleSheet(self.get_base_style(role))
-
         # 连接高度调整信号
         self.content_browser.document().documentLayout().documentSizeChanged.connect(
             self.request_height_adjustment
@@ -92,6 +91,9 @@ class MessageWidget(QWidget):
         # 初始渲染
         self.render_content()
 
+        # 设置基础样式（使用集中管理的样式）
+        self.apply_base_style(role, is_thinking)
+
     def render_content(self):
         """渲染内容"""
         if self.role == "assistant":
@@ -110,78 +112,43 @@ class MessageWidget(QWidget):
     def append_content(self, new_content):
         """追加新内容并重新渲染"""
         self.raw_content += new_content
+        # # 先加一下，以免用户嫌卡顿，但不一定现在渲染
+        # cursor = self.content_browser.textCursor()
+        # cursor.movePosition(cursor.End)
+        # html_content = markdown_utils.markdown_to_html(new_content).strip()
+        # print(repr(html_content))
+        # cursor.insertHtml(html_content)  # 直接将new_content转换后插入HTML片段
+        # self.content_browser.setTextCursor(cursor)
 
         # 节流控制
         current_time = time.time()
         char_count = len(self.raw_content)
-        dynamic_threshold = max(0.5, char_count / 100000)  # 每100字符增加1ms节流时间
-        if current_time - self.last_render_time > dynamic_threshold:
-            self.render_content()
-            self.last_render_time = current_time
+        # dynamic_threshold = max(
+        #     0.5, 0.1 + char_count / 100000
+        # )  # 初始100ms节流，每100字符增加1ms节流时间
+        # if current_time - self.last_render_time > dynamic_threshold:
+        self.render_content()
+        self.last_render_time = current_time
 
     def force_render(self):
         """强制立即渲染内容，忽略节流限制"""
         self.render_content()
         self.last_render_time = time.time()  # 重置计时器
 
-    def get_base_style(self, role):
-        """获取基础样式"""
-        # 如果是思考内容，使用黄色背景
-        if self.is_thinking:
-            return """
-                QTextBrowser {
-                    background-color: #FFFFF0;
-                    border: 1px solid #E0D5B0;
-                    border-radius: 8px;
-                    padding: 12px;
-                    font-size: 11pt;
-                }
-            """
-
-        # 否则使用常规样式
+    def apply_base_style(self, role, is_thinking):
+        """应用基础样式"""
+        # 确定样式键
         if role == "assistant":
-            return """
-                QTextBrowser {
-                    background-color: #F0F7FF;
-                    border: 1px solid #C0D5E0;
-                    border-radius: 8px;
-                    padding: 12px;
-                    font-size: 11pt;
-                }
-            """
+            style_key = "assistant_thinking" if is_thinking else "assistant_regular"
         elif role == "user":
-            return """
-                QTextBrowser {
-                    background-color: #E6F7ED;
-                    border: 1px solid #C0E0D0;
-                    border-radius: 8px;
-                    padding: 12px;
-                    font-size: 11pt;
-                }
-            """
+            style_key = "user"
         elif role == "system":
-            return """
-                QTextBrowser {
-                    background-color: #F8F8F8;
-                    border: 1px solid #E0E0E0;
-                    border-radius: 8px;
-                    padding: 12px;
-                    color: #666;
-                    font-style: italic;
-                    font-size: 11pt;
-                }
-            """
+            style_key = "system"
         else:
-            return """
-                QTextBrowser {
-                    background-color: #F8F8F8;
-                    border: 1px solid #E0E0E0;
-                    border-radius: 8px;
-                    padding: 12px;
-                    color: #666;
-                    font-size: 11pt;
-                }
-        """
+            style_key = "default"
+
+        # 应用样式
+        self.content_browser.setStyleSheet(MESSAGE_BASE_STYLES[style_key])
 
     def set_content(self, content, role):
         """设置内容并渲染"""
@@ -210,29 +177,49 @@ class MessageWidget(QWidget):
 
         self.adjust_height()
 
+    def __del__(self):
+        """确保定时器在对象销毁时停止"""
+        if hasattr(self, "height_adjust_timer"):
+            self.height_adjust_timer.stop()
+
     def adjust_height(self):
-        """根据内容自动调整高度，同时保持宽度灵活性"""
-        # 判断当前页面的滚动条位置是否在最底
-        if self.message_display == None:
-            bottom = False
-        else:
-            scrollbar = self.message_display.scroll_area.verticalScrollBar()
+        """根据内容自动调整高度，增加安全检查"""
+        if self.message_display is None or self._adjusting:
+            return
+        self._adjusting = True
+
+        try:
+            scroll_area = self.message_display.scroll_area
+            if not scroll_area:
+                return
+
+            scrollbar = scroll_area.verticalScrollBar()
+            if not scrollbar:
+                return
+
             old_position = scrollbar.value()
-            bottom = old_position == scrollbar.maximum()
+            at_bottom = old_position == scrollbar.maximum()
 
-        doc = self.content_browser.document()
-        doc_height = doc.size().height()
-        new_height = int(doc_height) + 30  # 30px缓冲
+            doc = self.content_browser.document()
+            if not doc:
+                return
 
-        # 设置最小高度而不是固定高度
-        self.content_browser.setMinimumHeight(new_height)
+            doc_height = doc.size().height()
+            new_height = int(doc_height) + 30  # 30px缓冲
 
-        # 更新整个控件的大小提示
-        self.updateGeometry()
-        self.update()
+            # 仅当需要更新时更新
+            if doc_height < new_height:
+                self.content_browser.setMinimumHeight(new_height)
+                self.request_delayed_update()
 
-        if bottom:
-            execute_repeatedly(self.message_display.scroll_to_bottom)
+            if at_bottom:
+                # 稍长延迟确保高度更新完成
+                QTimer.singleShot(100, self.message_display.scroll_to_bottom)
+
+        except (RuntimeError, AttributeError) as e:
+            print(f"Height adjustment error: {e}")
+
+        self._adjusting = False
 
     def handle_link_click(self, url):
         """处理链接点击 - 在外部浏览器打开"""
@@ -243,12 +230,12 @@ class MessageWidget(QWidget):
         matches = []
 
         # 获取纯文本内容
-        plain_text = self.content_browser.toPlainText()
+        content = self.raw_content
 
         # 执行搜索（忽略大小写）
         start = 0
         while True:
-            index = case_insensitive_find(plain_text, search_term, start)
+            index = case_insensitive_find(content, search_term, start)
             if index == -1:
                 break
             matches.append(index)

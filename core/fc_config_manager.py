@@ -128,27 +128,26 @@ def get_assist():
     return "assistant" if get_config("enable_r1") else "assistant-v3"
 
 
-# def get_system_prompt(p=1):
-#     """获取系统提示，可能含时间与用户名"""
-#     if p == 1:
-#         prompt = f"你是一个智能助手，在一个个人平台上与用户交流。{SYSTEM_PROMPT[p][get_config('enable_baidu')][get_config('enable_tavily')]}\n当前时间：{time.asctime()}"
-#         name = get_username()
-#         return f"{prompt}\n用户名：{name}" if name else prompt
-#     return ""
-
-
 def get_system_prompt(p=1):
     """获取系统提示，包含时间、用户名和函数调用说明"""
     # 基础系统提示
     prompt = "你是一个智能助手，在一个个人平台上与用户交流。"
 
+    # 添加函数调用能力说明
+    prompt += "\n\n## 功能说明："
+
     # 根据配置添加百度搜索说明
     if get_config("enable_baidu"):
-        prompt += "若用户提问涉及最新信息，则平台可能会为你提供百度搜索的简要结果。"
+        prompt += "\n- 你可用 `baidu_search` 函数获取中文内容、实时新闻、最新事件等"
 
     # 根据配置添加Tavily搜索说明
     if get_config("enable_tavily"):
-        prompt += "Tavily是一个联网搜索API，你可用 `tavily_search` 函数进行深度调查。调用函数时必须严格写有效JSON格式。"
+        prompt += "\n- 你可用 `tavily_search` 函数获取英文内容、深度调查等"
+
+    # 添加函数调用指南
+    prompt += "\n\n## 使用指南："
+    prompt += "\n⒈当用户需要最新信息时，主动调用合适的搜索函数"
+    prompt += "\n⒉调用函数时必须严格写有效的JSON格式"
 
     # 添加当前时间
     prompt += f"\n\n当前时间：{time.asctime()}"

@@ -44,3 +44,26 @@ def is_deleted(obj):
     except AttributeError:
         # 处理传入非QObject对象的情况（如None）
         return True
+
+
+def delay_update(widget_class):
+    """为任意QWidget添加延迟更新能力的装饰器"""
+
+    class DelayedWrapper(widget_class):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self._delay_timer = QTimer()
+            self._delay_timer.setSingleShot(True)
+            self._delay_timer.timeout.connect(self._commit_delayed_update)
+
+        @pyqtSlot()
+        def request_delayed_update(self):
+            self._delay_timer.start(50)  # 合并50ms内的更新请求
+
+        @pyqtSlot()
+        def _commit_delayed_update(self):
+            if self.isVisible():
+                self.updateGeometry()
+                self.update()
+
+    return DelayedWrapper

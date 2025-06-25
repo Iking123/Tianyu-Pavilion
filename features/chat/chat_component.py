@@ -117,29 +117,40 @@ class ChatComponent(QWidget):
         if not user_input:
             return
 
+        # 重要：先停止并清理旧的Worker
+        if self.worker and self.worker.isRunning():
+            self.worker.stop()
+            self.worker.wait(3000)  # 等待最多3秒
+            if self.worker.isRunning():
+                self.worker.terminate()  # 强制终止
+            self.worker.deleteLater()
+            self.worker = None
+
         # 禁用发送按钮
         self.input_panel.set_send_enabled(False)
-        # 使用主窗口设置状态
-        if self.main_window:
-            self.main_window.set_status("处理中...")
 
         # 设置工作状态
         self.worker_active = True
 
-        # 添加用户消息到界面
+        # 添加用户消息
         self.message_display.add_message_by_role("user", user_input)
-
-        # 添加用户消息到历史
         self.conversation_history.append({"role": "user", "content": user_input})
 
-        # 创建并启动工作线程
+        # 创建新Worker
         self.worker = Worker(user_input, self.conversation_history, 1)
-        self.worker.start_thinking.connect(self.start_thinking)
-        self.worker.start_replying.connect(self.start_replying)
-        self.worker.update_signal.connect(self.add_message_content)
-        self.worker.status_signal.connect(self.main_window.set_status)
-        self.worker.search_complete.connect(self.message_display.add_search_result)
-        self.worker.finished.connect(self.on_worker_finished)
+
+        # 使用队列连接确保线程安全
+        self.worker.start_thinking.connect(self.start_thinking, Qt.QueuedConnection)
+        self.worker.start_replying.connect(self.start_replying, Qt.QueuedConnection)
+        self.worker.update_signal.connect(self.add_message_content, Qt.QueuedConnection)
+        self.worker.status_signal.connect(
+            self.main_window.set_status, Qt.QueuedConnection
+        )
+        self.worker.search_complete.connect(
+            self.message_display.add_search_result, Qt.QueuedConnection
+        )
+        self.worker.finished.connect(self.on_worker_finished, Qt.QueuedConnection)
+
         self.worker.start()
 
     def start_thinking(self):
@@ -163,18 +174,19 @@ class ChatComponent(QWidget):
 
     def add_message_content(self, role, content, is_thinking=False):
         """添加消息内容到聊天界面"""
-        if role and role.startswith("assistant"):
-            if is_thinking:
-                # 追加到思考控件
-                if self.thinking_widget:
-                    self.thinking_widget.append_content(content)
+        try:
+            if role and role.startswith("assistant"):
+                if is_thinking:
+                    if self.thinking_widget:
+                        self.thinking_widget.append_content(content)
+                else:
+                    self.message_display.append_to_assistant_message(content)
             else:
-                # 追加到回复控件
-                self.message_display.append_to_assistant_message(content)
-        else:
-            # 其他消息直接添加并滚动
-            self.message_display.add_message_by_role(role, content)
-            self.message_display.scroll_to_bottom()
+                self.message_display.add_message_by_role(role, content)
+                self.message_display.scroll_to_bottom()
+        except Exception as e:
+            print(f"添加消息内容时出错: {e}")
+            # 不要让异常导致程序崩溃
 
     def on_worker_finished(self):
         """工作线程完成时调用"""
@@ -313,4 +325,17 @@ class ChatComponent(QWidget):
         # 停止工作线程
         if self.worker and self.worker.isRunning():
             self.worker.stop()
-            self.worker.wait()
+            self.worker.wait(3000)
+            if self.worker.isRunning():
+                self.worker.terminate()
+            self.worker.deleteLater()
+            self.worker = None
+
+        # 清理消息显示区域
+        if hasattr(self, "message_display"):
+            self.message_display.clear_messages()
+
+    def closeEvent(self, event):
+        """窗口关闭时清理资源"""
+        self.cleanup()
+        super().closeEvent(event)

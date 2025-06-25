@@ -7,12 +7,32 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
 )
 from PyQt5.QtGui import QFont
+from PyQt5.QtCore import Qt, QTimer, QEvent
 from .styles import INPUT_STYLE, BUTTON_STYLES
 
 
-class InputPanel(QWidget):
-    """可复用的输入面板组件，包含输入框和按钮"""
+class CustomTextEdit(QTextEdit):
+    """自定义文本编辑框，支持回车发送"""
 
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent_panel = parent
+
+    def keyPressEvent(self, event):
+        """处理按键事件"""
+        # 如果是回车键，并且没有按Ctrl或Shift
+        if event.key() == Qt.Key_Return and not (
+            event.modifiers() & (Qt.ControlModifier | Qt.ShiftModifier)
+        ):
+            if self.parent_panel:
+                self.parent_panel.on_send_clicked()
+            event.accept()
+        else:
+            # 其他按键正常处理
+            super().keyPressEvent(event)
+
+
+class InputPanel(QWidget):
     def __init__(
         self,
         send_callback=None,
@@ -33,18 +53,18 @@ class InputPanel(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        # 主布局
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 15, 0, 0)
 
-        # 用户输入框
-        self.input_field = QTextEdit()
+        # 使用自定义的文本编辑框
+        self.input_field = CustomTextEdit(self)  # 传入self作为parent_panel
         self.input_field.setPlaceholderText(self.placeholder)
         self.input_field.setMinimumHeight(100)
         input_font = QFont()
         input_font.setPointSize(12)
         self.input_field.setFont(input_font)
         self.input_field.setStyleSheet(INPUT_STYLE)
+
         layout.addWidget(self.input_field)
         if self.threshold:
             self.input_field.textChanged.connect(self.limit_length)
@@ -52,7 +72,6 @@ class InputPanel(QWidget):
         # 按钮区域
         button_layout = QHBoxLayout()
 
-        # 清除按钮 - 新增条件显示
         if self.show_clear_button:
             self.clear_button = QPushButton("新对话")
             self.clear_button.setFixedHeight(60)
@@ -63,7 +82,6 @@ class InputPanel(QWidget):
             self.clear_button.clicked.connect(self.on_clear_clicked)
             button_layout.addWidget(self.clear_button)
 
-        # 发送按钮
         self.send_button = QPushButton("发送")
         self.send_button.setFixedHeight(60)
         button_font = QFont()
@@ -72,7 +90,6 @@ class InputPanel(QWidget):
         self.send_button.setStyleSheet(BUTTON_STYLES["send"])
         self.send_button.clicked.connect(self.on_send_clicked)
 
-        # 添加伸缩空间（当没有清除按钮时保持布局平衡）
         button_layout.addStretch()
         button_layout.addWidget(self.send_button)
 
@@ -80,9 +97,14 @@ class InputPanel(QWidget):
 
     def on_send_clicked(self):
         """处理发送按钮点击事件"""
-        if self.send_callback:
-            self.send_callback(self.get_input_text())
-            self.clear_input()
+        if not self.send_button.isEnabled():
+            return  # 防止重复点击
+
+        text = self.get_input_text()
+        if text and self.send_callback:
+            self.send_button.setEnabled(False)  # 立即禁用
+            self.send_callback(text)
+            QTimer.singleShot(100, self.clear_input)
 
     def on_clear_clicked(self):
         """处理清除按钮点击事件"""
@@ -94,21 +116,24 @@ class InputPanel(QWidget):
         return self.input_field.toPlainText().strip()
 
     def clear_input(self):
-        """清空输入框"""
+        """清空输入框并设置焦点"""
         self.input_field.clear()
+        self.input_field.setFocus()  # 自动聚焦
 
     def set_send_enabled(self, enabled):
         """设置发送按钮状态"""
         self.send_button.setEnabled(enabled)
 
     def limit_length(self):
-        if len(self.input_field.toPlainText()) > self.threshold:
-            # 保留前threshold个字符
+        text = self.input_field.toPlainText()
+        if len(text) > self.threshold:
             cursor = self.input_field.textCursor()
-            current_pos = cursor.position()  # 保存当前光标位置
-            self.input_field.setPlainText(
-                self.input_field.toPlainText()[: self.threshold]
-            )
-            # 恢复光标位置（不超过新长度）
+            current_pos = cursor.position()
+
+            # 使用块操作减少重绘
+            self.input_field.blockSignals(True)
+            self.input_field.setPlainText(text[: self.threshold])
+            self.input_field.blockSignals(False)
+
             cursor.setPosition(min(current_pos, self.threshold))
             self.input_field.setTextCursor(cursor)

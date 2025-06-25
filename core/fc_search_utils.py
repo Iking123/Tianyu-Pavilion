@@ -1,6 +1,12 @@
 import re
+import time
+import requests
 from tavily import TavilyClient
+from openai import OpenAI
 from core.config_manager import *
+
+# 初始化客户端
+client = OpenAI(api_key=get_config("api_key"), base_url=get_config("base_url"))
 
 
 def baidu_search(query, max_results=5):
@@ -8,12 +14,21 @@ def baidu_search(query, max_results=5):
     try:
         from baidusearch.baidusearch import search
 
-        tried_nums = 0
-        results = []
-        while tried_nums < 5 and len(results) < max_results:
-            tried_nums += 1
-            # 执行百度搜索
-            results = search(query, num_results=max_results)
+        # 确保query是字符串
+        if not isinstance(query, str):
+            query = str(query)
+
+        # 重试逻辑
+        for _ in range(3):
+            try:
+                results = search(query, num_results=max_results)
+                if results and len(results) > 0:
+                    break
+            except Exception as e:
+                print(f"百度搜索异常: {str(e)}")
+                time.sleep(1)
+        else:
+            return "⚠️ 百度搜索失败: 无法获取结果"
 
         # 格式化结果
         formatted = "【百度搜索结果】\n"
@@ -27,14 +42,11 @@ def baidu_search(query, max_results=5):
             abstract = re.sub(r"(?:\r\n|\n|\r){2,}", "\n", abstract)  # 减少多余换行
 
             formatted += f"🔍 结果 {idx+1}:\n"
-            formatted += f"- 标题：{title}\n"
-            formatted += f"- 链接：{url}\n"
-            formatted += f"- 摘要：{abstract}\n"
+            formatted += f"   - 标题: {title}\n"
+            formatted += f"   - 链接: {url}\n"
+            formatted += f"   - 摘要: {abstract}\n"
 
-        formatted = formatted.strip()
-        print("\n")
-        print(formatted)
-        return formatted
+        return formatted.strip()
 
     except Exception as e:
         return f"⚠️ 百度搜索失败: {str(e)}"
@@ -51,22 +63,22 @@ def tavily_search(query):
         response = tavily_client.search(query)
         results = response.get("results", [])
 
+        # 限制结果数量
+        max_results = min(3, len(results))
+
         # 格式化结果
         formatted = "【Tavily搜索结果】\n"
-        for idx, item in enumerate(results):
+        for idx in range(max_results):
+            item = results[idx]
             title = item.get("title", "无标题")
             url = item.get("url", "#")
             content = item.get("content", "无内容")
 
             formatted += f"🔍 结果 {idx+1}:\n"
-            formatted += f"- 标题：{title}\n"
-            formatted += f"- 链接：{url}\n"
-            formatted += f"- 内容：{content}\n"
+            formatted += f"   - 标题: {title}\n"
+            formatted += f"   - 链接: {url}\n"
+            formatted += f"   - 内容: {content}...\n"
 
-        formatted = formatted.strip()
-        print("\n")
-        print(formatted)
         return formatted
-
     except Exception as e:
         return f"⚠️ Tavily搜索失败: {str(e)}"

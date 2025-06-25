@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QSizePolicy
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QTextCursor
 from .message_widget import MessageWidget
 
@@ -38,7 +38,7 @@ class MessageDisplayArea(QWidget):
     def add_message(self, widget):
         """添加消息组件"""
         self.container_layout.addWidget(widget)
-        self.scroll_to_bottom()
+        QTimer.singleShot(100, self.scroll_to_bottom)  # 延迟滚动确保布局完成
         return widget
 
     def add_message_by_role(self, role, content, is_thinking=False):
@@ -69,10 +69,13 @@ class MessageDisplayArea(QWidget):
 
     def clear_messages(self):
         """清除所有消息"""
-        self.current_assistant_widget = None  # 清除当前助手引用
-        for i in reversed(range(self.container_layout.count())):
-            widget = self.container_layout.itemAt(i).widget()
+        self.current_assistant_widget = None
+        while self.container_layout.count():
+            item = self.container_layout.takeAt(0)  # 从布局中移除
+            widget = item.widget()
             if widget:
+                if isinstance(widget, MessageWidget):
+                    widget.height_adjust_timer.stop()
                 widget.deleteLater()
 
     def scroll_to_bottom(self):

@@ -2,8 +2,6 @@ import re
 import time
 import json
 import requests
-import copy
-import logging
 from PyQt5.QtCore import QThread, pyqtSignal
 from core.config_manager import *
 from core.search_utils import baidu_search, tavily_search
@@ -21,110 +19,79 @@ class Worker(QThread):
     def __init__(self, user_input, conversation_history, pageIndex):
         super().__init__()
         self.user_input = user_input
-        self.conversation_history = copy.deepcopy(conversation_history)  # 深拷贝隔离
+        self.conversation_history = conversation_history
         self.pageIndex = pageIndex
         self.running = True
-        self.response = None
         self.max_function_calls = 3  # 最大函数调用次数
         self.function_call_count = 0  # 当前函数调用次数
 
     def run(self):
-        try:
-            # 根据配置选择模型
-            if get_config("enable_r1"):
-                model_name = "deepseek-reasoner"
-            else:
-                model_name = "deepseek-chat"
+        # 根据配置选择模型
+        if get_config("enable_r1"):
+            model_name = "deepseek-reasoner"
+        else:
+            model_name = "deepseek-chat"
 
-            # 更新系统提示（包含当前时间和用户名）
-            if (
-                self.conversation_history
-                and self.conversation_history[0]["role"] == "system"
-            ):
-                self.conversation_history[0]["content"] = get_system_prompt(
-                    self.pageIndex
-                )
-            else:
-                self.conversation_history.insert(
-                    0, {"role": "system", "content": get_system_prompt(self.pageIndex)}
-                )
+        # 更新系统提示（包含当前时间和用户名）
+        if (
+            self.conversation_history
+            and self.conversation_history[0]["role"] == "system"
+        ):
+            self.conversation_history[0]["content"] = get_system_prompt(self.pageIndex)
+        else:
+            self.conversation_history.insert(
+                0, {"role": "system", "content": get_system_prompt(self.pageIndex)}
+            )
 
-            # 判断是否需要百度联网搜索
-            need_search = False
-            search_triggers = [
-                "最新",
-                "新闻",
-                "最近",
-                "搜索",
-                "搜一下",
-                "查一下",
-                "实时",
-                "当前",
-                "2025",
-                "今年",
-                "股价",
-                "价格",
-                "行情",
-                "比赛",
-                "比分",
-                "百度一下",
-            ]
-            question_types = [
-                "是谁",
-                "哪年",
-                "什么时候",
-                "在哪里",
-                "为什么",
-                "怎么样",
-                "如何",
-            ]
+        # 添加用户输入
+        self.conversation_history.append({"role": "user", "content": self.user_input})
 
-            if any(trigger in self.user_input for trigger in search_triggers):
-                need_search = True
-            elif any(q_type in self.user_input for q_type in question_types):
-                need_search = True
-            elif re.search(r"20[2-9][0-9]|今年|本月|上周", self.user_input):
-                need_search = True
-
-            # ========== 百度搜索处理 ==========
-            if need_search:
-                self.status_signal.emit("🔍 正在通过百度搜索并提取内容...")
-                search_results = baidu_search(self.user_input)
-                if search_results:
-                    self.search_complete.emit(search_results)
-                    self.conversation_history.append(
-                        {"role": "system", "content": search_results}
-                    )
-
-            # ========== 定义可调用的函数 ==========
-            tools = []
-            if get_config("enable_tavily"):
-                tools.append(
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "tavily_search",
-                            "description": "使用Tavily搜索引擎进行深度网络搜索",
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "query": {
-                                        "type": "string",
-                                        "description": "搜索要调查的主题，尽量用英文",
-                                    }
-                                },
-                                "required": ["query"],
+        # 定义可调用的函数
+        tools = []
+        if get_config("enable_baidu"):
+            tools.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "baidu_search",
+                        "description": "使用百度搜索引擎进行网络搜索，适用于获取中文网页内容",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "query": {
+                                    "type": "string",
+                                    "description": "搜索关键词",
+                                }
                             },
+                            "required": ["query"],
                         },
-                    }
-                )
+                    },
+                }
+            )
 
-            # ========== 处理对话流 ==========
-            self.process_conversation(model_name, tools)
+        if get_config("enable_tavily"):
+            tools.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "tavily_search",
+                        "description": "使用Tavily搜索引擎进行深度网络搜索，适用于获取英文内容",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "query": {
+                                    "type": "string",
+                                    "description": "搜索关键词",
+                                }
+                            },
+                            "required": ["query"],
+                        },
+                    },
+                }
+            )
 
-        except Exception as e:
-            logging.exception("Worker线程崩溃")
-            self.update_signal.emit("system", f"处理错误: {str(e)}", False)
+        # 处理对话流
+        self.process_conversation(model_name, tools)
 
     def process_conversation(self, model_name, tools):
         """处理对话流，支持函数调用"""
@@ -148,15 +115,17 @@ class Worker(QThread):
 
             try:
                 # 发送请求
-                self.response = requests.post(
+                response = requests.post(
                     f"{get_config('base_url')}/chat/completions",
                     json=payload,
                     headers=headers,
                     stream=True,
                 )
 
-                if self.response.status_code != 200:
-                    error_msg = f"请求失败 (状态码 {self.response.status_code}): {self.response.text}"
+                if response.status_code != 200:
+                    error_msg = (
+                        f"请求失败 (状态码 {response.status_code}): {response.text}"
+                    )
                     self.update_signal.emit("system", error_msg, False)
                     return
 
@@ -164,13 +133,11 @@ class Worker(QThread):
                 tool_calls = []
                 current_tool_call = None
                 full_response = ""
-                assist = get_assist()
-                in_thinking = (
-                    assist == "assistant-v3"
-                )  # 非常重要：因为V3不会深度思考啊啊啊！所以默认“在思考”，这样就会触发我们的“开始回复”！！！
+                in_thinking = False
+                role = "assistant"
                 reasoning_content = ""
 
-                for line in self.response.iter_lines():
+                for line in response.iter_lines():
                     if not self.running:
                         break
 
@@ -225,18 +192,18 @@ class Worker(QThread):
                                             self.start_thinking.emit()
                                             self.status_signal.emit("🤔 正在思考...")
                                             in_thinking = True
-                                        self.update_signal.emit(assist, reasoning, True)
+                                        self.update_signal.emit(role, reasoning, True)
 
                                     # 处理回复内容
                                     content = delta.get("content", "")
                                     if content:
                                         if in_thinking:
-                                            self.start_replying.emit(assist)
+                                            self.start_replying.emit(role)
                                             self.status_signal.emit(
                                                 "💬 正在生成回复..."
                                             )
                                             in_thinking = False
-                                        self.update_signal.emit(assist, content, False)
+                                        self.update_signal.emit(role, content, False)
                                         full_response += content
                             except json.JSONDecodeError:
                                 continue
@@ -257,7 +224,7 @@ class Worker(QThread):
                 # 如果有函数调用，执行函数
                 if tool_calls:
                     self.function_call_count += 1
-                    self.status_signal.emit("🔍 正在执行Tavily搜索并提取内容...")
+                    self.status_signal.emit("🔍 正在执行搜索...")
 
                     # 执行每个函数调用
                     for tool_call in tool_calls:
@@ -272,7 +239,9 @@ class Worker(QThread):
                             function_args = {"query": arguments_str}
 
                         # 执行对应的函数
-                        if function_name == "tavily_search":
+                        if function_name == "baidu_search":
+                            result = baidu_search(function_args.get("query", ""))
+                        elif function_name == "tavily_search":
                             result = tavily_search(function_args.get("query", ""))
                         else:
                             result = f"⚠️ 未知函数: {function_name}"
@@ -298,16 +267,8 @@ class Worker(QThread):
                     return
 
             except requests.exceptions.RequestException as e:
-                if self.running:  # 仅报告非主动停止的错误
-                    self.update_signal.emit("system", f"网络错误: {str(e)}", False)
+                self.update_signal.emit("system", f"\n网络请求错误: {str(e)}", False)
+                return
 
     def stop(self):
         self.running = False
-        if self.response:
-            try:
-                self.response.close()  # 强制关闭连接
-            except:
-                pass
-
-    def __del__(self):
-        self.stop()
