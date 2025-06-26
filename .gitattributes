@@ -1,0 +1,2 @@
+dist/DeepSeekApp.exe filter=lfs diff=lfs merge=lfs -text
+build/build/DeepSeekApp.pkg filter=lfs diff=lfs merge=lfs -text
