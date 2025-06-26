@@ -1,8 +1,6 @@
 import re
-import time
 import json
 import requests
-import copy
 import logging
 from PyQt5.QtCore import QThread, pyqtSignal
 from core.config_manager import *
@@ -21,7 +19,7 @@ class Worker(QThread):
     def __init__(self, user_input, conversation_history, pageIndex):
         super().__init__()
         self.user_input = user_input
-        self.conversation_history = copy.deepcopy(conversation_history)  # 深拷贝隔离
+        self.conversation_history = conversation_history
         self.pageIndex = pageIndex
         self.running = True
         self.response = None

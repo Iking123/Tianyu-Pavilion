@@ -54,18 +54,15 @@ class MainWindow(QMainWindow):
         # 初始化状态栏控件
         self.init_status_bar()
 
-        # 创建页面
+        # 只创建主页
         self.home_page = HomePage(self)
-        self.chat_page = ChatPage(self)
-        self.game_page = GamePage(self)  # 游戏列表页面
-        self.interactive_page = InteractiveNovelPage(self)
-        self.settings_page = SettingsPage(self)
-
         self.stacked_widget.addWidget(self.home_page)
-        self.stacked_widget.addWidget(self.chat_page)
-        self.stacked_widget.addWidget(self.game_page)  # 游戏列表页面
-        self.stacked_widget.addWidget(self.interactive_page)
-        self.stacked_widget.addWidget(self.settings_page)
+
+        # 其他页面设为None，需要时再创建
+        self.chat_page = None
+        self.game_page = None
+        self.interactive_page = None
+        self.settings_page = None
 
         # 存储游戏页面的字典
         self.game_pages = {}
@@ -196,8 +193,32 @@ class MainWindow(QMainWindow):
         )
 
     def switch_page(self, index):
-        """切换功能页面"""
-        self.stacked_widget.setCurrentIndex(index)
+        """切换功能页面，按需创建页面"""
+        if index == 0:  # 主页
+            if not hasattr(self, "home_page") or not self.home_page:
+                self.home_page = HomePage(self)
+                self.stacked_widget.addWidget(self.home_page)
+            self.stacked_widget.setCurrentWidget(self.home_page)
+        elif index == 1:  # 聊天页面
+            if not self.chat_page:
+                self.chat_page = ChatPage(self)
+                self.stacked_widget.addWidget(self.chat_page)
+            self.stacked_widget.setCurrentWidget(self.chat_page)
+        elif index == 2:  # 游戏列表
+            if not self.game_page:
+                self.game_page = GamePage(self)
+                self.stacked_widget.addWidget(self.game_page)
+            self.stacked_widget.setCurrentWidget(self.game_page)
+        elif index == 3:  # 交互小说
+            if not self.interactive_page:
+                self.interactive_page = InteractiveNovelPage(self)
+                self.stacked_widget.addWidget(self.interactive_page)
+            self.stacked_widget.setCurrentWidget(self.interactive_page)
+        elif index == 4:  # 设置页面
+            if not self.settings_page:
+                self.settings_page = SettingsPage(self)
+                self.stacked_widget.addWidget(self.settings_page)
+            self.stacked_widget.setCurrentWidget(self.settings_page)
 
     def set_status(self, message):
         """设置状态栏消息"""

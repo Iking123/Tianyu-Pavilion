@@ -1,5 +1,7 @@
 from PyQt5.QtCore import QObject, pyqtSlot, QTimer, QDateTime
 from PyQt5.QtWidgets import QScrollBar, QScrollArea
+import sys
+import os
 
 
 def case_insensitive_find(s, sub, start=None, end=None):
@@ -67,3 +69,15 @@ def delay_update(widget_class):
                 self.update()
 
     return DelayedWrapper
+
+
+def resource_path(relative_path):
+    """获取资源的绝对路径，支持开发环境和PyInstaller打包环境"""
+    if hasattr(sys, "_MEIPASS"):
+        # PyInstaller打包后的临时目录
+        base_path = sys._MEIPASS
+    else:
+        # 正常开发环境
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)

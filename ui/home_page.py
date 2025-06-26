@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QFont, QColor, QPixmap, QPainter, QBrush, QLinearGradient
 from PyQt5.QtCore import Qt, QSize, QPoint
+from funcs import resource_path
 
 
 class HomePage(QWidget):
@@ -36,12 +37,6 @@ class HomePage(QWidget):
         subtitle_label.setAlignment(Qt.AlignCenter)
         subtitle_label.setStyleSheet("color: #555; margin-bottom: 50px;")
         layout.addWidget(subtitle_label)
-
-        self.resources_dir = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),  # 向上退两级到项目根目录
-            "resources",
-            "images",
-        )
 
         # 功能方块网格布局
         grid_layout = QGridLayout()
@@ -82,7 +77,7 @@ class HomePage(QWidget):
             "交互小说": "interactive_bg.png",
             "设置": "settings_bg.png",
         }
-        img_path = os.path.join(self.resources_dir, img_map[text])
+        img_path = resource_path(os.path.join("resources", "images", img_map[text]))
 
         # 使用绝对路径并转换路径分隔符
         abs_path = os.path.abspath(img_path).replace("\\", "/")

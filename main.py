@@ -1,6 +1,7 @@
+import os
 import sys
 from PyQt5.QtWidgets import QApplication, QScrollArea, QScrollBar
-from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtGui import QPalette, QColor, QIcon
 from PyQt5.QtCore import QTimer
 from ui.main_window import MainWindow
 from core.config_manager import get_config
@@ -43,6 +44,29 @@ def main():
 
     # 创建主窗口
     window = MainWindow()
+
+    # 设置应用图标（优先使用不同尺寸）
+    icon_sizes = [
+        "icon_256x256.ico",  # 主图标
+        "icon_128x128.ico",  # 中等图标
+        "icon_64x64.ico",  # 小图标
+        "icon_32x32.ico",  # 任务栏图标
+        "icon.png",  # 通用格式
+        "icon.jpg",  # 备用格式
+    ]
+
+    base_path = getattr(sys, "_MEIPASS", os.path.abspath("."))
+    icon_dir = os.path.join(base_path, "resources", "icons")
+
+    # 尝试加载不同尺寸的图标
+    for icon_file in icon_sizes:
+        icon_path = os.path.join(icon_dir, icon_file)
+        if os.path.exists(icon_path):
+            window.setWindowIcon(QIcon(icon_path))
+            break
+    else:
+        print("警告: 未找到应用图标文件")
+
     window.show()
     sys.exit(app.exec_())
 

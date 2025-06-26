@@ -123,12 +123,12 @@ class MessageWidget(QWidget):
         # 节流控制
         current_time = time.time()
         char_count = len(self.raw_content)
-        # dynamic_threshold = max(
-        #     0.5, 0.1 + char_count / 100000
-        # )  # 初始100ms节流，每100字符增加1ms节流时间
-        # if current_time - self.last_render_time > dynamic_threshold:
-        self.render_content()
-        self.last_render_time = current_time
+        dynamic_threshold = max(
+            0.5, 0.05 + char_count / 100000
+        )  # 初始50ms节流，每100字符增加1ms节流时间
+        if current_time - self.last_render_time > dynamic_threshold:
+            self.render_content()
+            self.last_render_time = current_time
 
     def force_render(self):
         """强制立即渲染内容，忽略节流限制"""
