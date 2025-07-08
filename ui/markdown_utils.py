@@ -64,7 +64,7 @@ def markdown_to_html(content):
         return f"""
         <div style="
             font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-            font-size: 18pt;
+            font-size: 11pt;
             color: #333;
             line-height: 1.2;
             padding: 15px;
@@ -94,35 +94,34 @@ def markdown_to_html(content):
     # 转换为字符串
     html = str(soup)
 
-    # # 添加CSS样式
-    # return f"""
-    # <style>
-    #     .markdown-list {{
-    #         margin-top: 4px;
-    #         margin-bottom: 4px;
-    #         padding-left: 0;
-    #     }}
-    #     li {{
-    #         margin: 6px 0;
-    #     }}
-    #     del {{
-    #         text-decoration: line-through;
-    #         color: #999;
-    #     }}
-    #     /* 添加嵌套列表支持 */
-    #     ol ol, ol ul, ul ol, ul ul {{
-    #         margin-top: 4px;
-    #         margin-bottom: 4px;
-    #         padding-left: 20px;
-    #     }}
-    # </style>
-    # <div style="
-    #     font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-    #     font-size: 18pt;
-    #     color: #333;
-    #     line-height: 1.2;
-    # ">
-    #     {html}
-    # </div>
-    # """
-    return html
+    # 添加CSS样式
+    return f"""
+    <style>
+        .markdown-list {{
+            margin-top: 4px;
+            margin-bottom: 4px;
+            padding-left: 0;
+        }}
+        li {{
+            margin: 6px 0;
+        }}
+        del {{
+            text-decoration: line-through;
+            color: #999;
+        }}
+        /* 添加嵌套列表支持 */
+        ol ol, ol ul, ul ol, ul ul {{
+            margin-top: 4px;
+            margin-bottom: 4px;
+            padding-left: 20px;
+        }}
+    </style>
+    <div style="
+        font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        font-size: 11pt;
+        color: #333;
+        line-height: 1.2;
+    ">
+        {html}
+    </div>
+    """

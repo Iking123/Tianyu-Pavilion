@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QSizePolicy
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QTextCursor
-from .qtext_message_widget import MessageWidget
+from .message_widget import MessageWidget
 
 
 class MessageDisplayArea(QWidget):
@@ -23,7 +23,6 @@ class MessageDisplayArea(QWidget):
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        # +++ 确保垂直滚动条始终可用 +++
         self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
         # 创建容器

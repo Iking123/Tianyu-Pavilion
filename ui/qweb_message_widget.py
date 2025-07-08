@@ -1,17 +1,9 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QSizePolicy
-from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings
+from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtGui import QFont, QDesktopServices
-from PyQt5.QtCore import (
-    Qt,
-    QUrl,
-    QTimer,
-    QEvent,
-    QSize,
-    QPropertyAnimation,
-    QEasingCurve,
-)
+from PyQt5.QtCore import Qt, QUrl, QTimer
 import time
-from . import em_markdown_utils
+from . import markdown_utils
 from .styles import *
 from core.config_manager import get_config
 from funcs import *
@@ -26,8 +18,7 @@ class MessageWidget(QWidget):
         self._adjusting = False
         self.message_display = parent
         self.is_thinking = is_thinking
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.MinimumExpanding)
-        self.sizeHint = lambda: QSize(600, 150)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         layout = QVBoxLayout()
         layout.setContentsMargins(5, 15, 5, 15)
@@ -55,34 +46,15 @@ class MessageWidget(QWidget):
 
         # 使用 QWebEngineView
         self.content_view = QWebEngineView()
-
-        # 设置初始高度为合理值
-        self.content_view.setMinimumHeight(150)  # 设置较小的初始高度
-
-        # 覆盖QWebEngineView的默认尺寸提示
-        self.content_view.sizeHint = lambda: QSize(600, 150)  # 覆盖默认的400px高度
-
         # 使用120%的缩放因子解决字体大小问题
         self.content_view.setZoomFactor(1.2)
-
-        # 统一尺寸策略
         self.content_view.setSizePolicy(
-            QSizePolicy.Expanding,
-            QSizePolicy.MinimumExpanding,  # 使用 Preferred 替代 Fixed/MinimumExpanding
+            QSizePolicy.Expanding, QSizePolicy.MinimumExpanding
         )
-
-        # self.content_view.setMinimumWidth(600)
+        self.content_view.setMinimumWidth(600)
         self.content_view.setContextMenuPolicy(Qt.NoContextMenu)
         # 使用背景色
         self.content_view.page().setBackgroundColor(Qt.transparent)
-
-        # 禁用滚动条 - 正确的方法
-        self.content_view.settings().setAttribute(
-            QWebEngineSettings.ShowScrollBars, False
-        )
-
-        # 安装事件过滤器以传递滚轮事件
-        self.content_view.installEventFilter(self)
 
         # 连接页面加载完成信号
         self.content_view.loadFinished.connect(self.on_page_loaded)
@@ -104,21 +76,18 @@ class MessageWidget(QWidget):
         # 高度调整计时器
         self.height_adjust_timer = QTimer()
         self.height_adjust_timer.setSingleShot(True)
-        self.height_adjust_timer.timeout.connect(self.safe_adjust_height)
+        self.height_adjust_timer.timeout.connect(self.adjust_height)
 
-    def eventFilter(self, obj, event):
-        """事件过滤器，用于传递滚轮事件"""
-        if obj == self.content_view and event.type() == QEvent.Wheel:
-            # 将滚轮事件传递给父窗口的滚动区域
-            scroll_area = self.message_display.scroll_area
-            scroll_area.wheelEvent(event)
-            return True
-        return super().eventFilter(obj, event)
+    def on_page_loaded(self, ok):
+        """页面加载完成后调整高度"""
+        if ok and not self.is_rendered:
+            self.adjust_height()
+            self.is_rendered = True
 
     def render_content(self, content=None):
         """渲染内容为HTML"""
         content = content or self.raw_content
-        html_content = em_markdown_utils.markdown_to_html(content)
+        html_content = markdown_utils.markdown_to_html(content)
 
         # 添加MathJax支持
         mathjax_script = """
@@ -158,14 +127,10 @@ class MessageWidget(QWidget):
             <style>
                 body {{
                     font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-                    font-size: 18px;
+                    font-size: 13pt;  /* 增大字体 */
                     color: #333;
                     margin: 0;
-                    padding: 12px; */
-                    /* 添加顶部元素外边距归零 */
-                    body > *:first-child {{
-                        margin-top: 0 !important;
-                    }}
+                    padding: 12px;
                     border-radius: 8px;
                     line-height: 1.4;  /* 减小行高 */
                     {bg_style}
@@ -256,22 +221,6 @@ class MessageWidget(QWidget):
         """设置内容并渲染"""
         self.raw_content = content
         self.render_content()
-        self.safe_adjust_height()
-
-    def on_page_loaded(self, ok):
-        """页面加载完成后调整高度"""
-        if ok:
-            # 先设置一个合理的初始高度
-            self.content_view.setMinimumHeight(150)
-
-            # 然后再调整到实际高度
-            QTimer.singleShot(50, self.safe_adjust_height)
-            self.is_rendered = True
-
-    def safe_adjust_height(self):
-        """安全调整高度方法"""
-        if not self._adjusting:
-            self.adjust_height()
 
     def adjust_height(self):
         """根据内容自动调整高度"""
@@ -281,12 +230,27 @@ class MessageWidget(QWidget):
         self._adjusting = True
 
         try:
-            # 使用更简单的JavaScript获取页面实际高度
+            # 通过JavaScript获取页面实际高度
             self.content_view.page().runJavaScript(
                 """
-                // 直接获取文档高度
-                document.documentElement.scrollHeight;
-                """,
+                // 获取实际内容高度
+                var body = document.body;
+                var html = document.documentElement;
+                var height = Math.max(
+                    body.scrollHeight, 
+                    body.offsetHeight, 
+                    html.clientHeight, 
+                    html.scrollHeight, 
+                    html.offsetHeight
+                );
+                
+                // 减去不必要的边距
+                var computedStyle = window.getComputedStyle(body);
+                var paddingTop = parseFloat(computedStyle.paddingTop);
+                var paddingBottom = parseFloat(computedStyle.paddingBottom);
+                
+                height - paddingTop - paddingBottom;
+            """,
                 self.update_height,
             )
         except Exception as e:
@@ -296,46 +260,22 @@ class MessageWidget(QWidget):
     def update_height(self, height):
         """更新视图高度"""
         try:
-            print(f"高度计算结果: {height}")  # 调试输出
-
-            if not height or height == 0:
-                print("无效高度，等待重试...")
-                # 重试高度计算
-                QTimer.singleShot(100, self.safe_adjust_height)
+            if not height:
                 return
 
-            # 获取当前滚动位置
-            scroll_area = self.message_display.scroll_area
-            scrollbar = scroll_area.verticalScrollBar()
-            old_position = scrollbar.value()
-            at_bottom = old_position == scrollbar.maximum()
+            # 添加5px的缓冲
+            new_height = int(height) + 5
 
-            # 添加30px缓冲
-            new_height = int(height) + 30
+            # 更新高度
+            self.content_view.setMinimumHeight(new_height)
+            self.content_view.setMaximumHeight(new_height)
 
-            # 仅当需要更新时更新
-            if self.content_view.minimumHeight() < new_height:
-                self.content_view.setMinimumHeight(new_height)
-                self.request_delayed_update()
-                # 更新布局
-                self.layout().invalidate()
-                self.layout().activate()
-                self.updateGeometry()
+            # 请求延迟更新
+            self.request_delayed_update()
 
-            # 如果之前已经在底部，则滚动到底部
-            if self.message_display and at_bottom:
+            # 滚动到底部
+            if self.message_display:
                 QTimer.singleShot(100, self.message_display.scroll_to_bottom)
 
-        except Exception as e:
-            print(f"更新高度错误: {e}")
         finally:
             self._adjusting = False
-
-    def animate_height_change(self, new_height):
-        """平滑高度变化动画"""
-        animation = QPropertyAnimation(self.content_view, b"minimumHeight")
-        animation.setDuration(150)  # 150毫秒
-        animation.setEasingCurve(QEasingCurve.OutCubic)
-        animation.setStartValue(self.content_view.height())
-        animation.setEndValue(new_height)
-        animation.start()

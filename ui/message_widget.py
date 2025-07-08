@@ -1,14 +1,8 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QTextBrowser, QSizePolicy
 from PyQt5.QtGui import QFont, QTextCursor, QDesktopServices, QTextCharFormat, QColor
 from PyQt5.QtCore import Qt, QUrl, QTimer, QObject
-from PyQt5.QtNetwork import (
-    QNetworkAccessManager,
-    QNetworkRequest,
-    QSslConfiguration,
-    QNetworkReply,
-)
 import time
-from . import qtext_markdown_utils  # 导入Markdown工具
+from . import markdown_utils  # 导入Markdown工具
 from .styles import *  # 导入样式
 from core.config_manager import get_config
 from funcs import *
@@ -100,27 +94,11 @@ class MessageWidget(QWidget):
         # 设置基础样式（使用集中管理的样式）
         self.apply_base_style(role, is_thinking)
 
-        # 仅保留外部链接设置
-        self.content_browser.setOpenExternalLinks(True)
-        self.content_browser.setOpenLinks(True)
-        print(f"QTextBrowser 外部链接开启: {self.content_browser.openExternalLinks()}")
-        print(f"QTextBrowser 自动打开链接: {self.content_browser.openLinks()}")
-
-    def on_request_finished(self, reply):
-        url = reply.url().toString()
-        if "latex.codecogs.com" in url:
-            error = reply.error()
-            if error == QNetworkReply.NoError:
-                print(f"公式图片加载成功: {url}")
-            else:
-                print(f"公式图片加载失败: {url}, 错误: {reply.errorString()}")
-
     def render_content(self):
         """渲染内容"""
         if self.role == "assistant":
             # 使用工具函数渲染Markdown
-            html_content = qtext_markdown_utils.markdown_to_html(self.raw_content)
-            print(f"渲染的HTML内容: {html_content}")  # 新增打印
+            html_content = markdown_utils.markdown_to_html(self.raw_content)
             self.content_browser.setHtml(html_content)
 
             # 关键修改：根据是否为思考内容设置样式
@@ -134,13 +112,13 @@ class MessageWidget(QWidget):
     def append_content(self, new_content):
         """追加新内容并重新渲染"""
         self.raw_content += new_content
-        # 先加一下，以免用户嫌卡顿，但不一定现在渲染
-        cursor = self.content_browser.textCursor()
-        cursor.movePosition(cursor.End)
-        html_content = qtext_markdown_utils.markdown_to_html(new_content).strip()
+        # # 先加一下，以免用户嫌卡顿，但不一定现在渲染
+        # cursor = self.content_browser.textCursor()
+        # cursor.movePosition(cursor.End)
+        # html_content = markdown_utils.markdown_to_html(new_content).strip()
         # print(repr(html_content))
-        cursor.insertHtml(html_content)  # 直接将new_content转换后插入HTML片段
-        self.content_browser.setTextCursor(cursor)
+        # cursor.insertHtml(html_content)  # 直接将new_content转换后插入HTML片段
+        # self.content_browser.setTextCursor(cursor)
 
         # 节流控制
         current_time = time.time()
@@ -155,8 +133,6 @@ class MessageWidget(QWidget):
     def force_render(self):
         """强制立即渲染内容，忽略节流限制"""
         self.render_content()
-        # 强制刷新页面，重新加载图片
-        self.content_browser.reload()
         self.last_render_time = time.time()  # 重置计时器
 
     def apply_base_style(self, role, is_thinking):
@@ -171,28 +147,8 @@ class MessageWidget(QWidget):
         else:
             style_key = "default"
 
-        # 应用样式 - 添加数学公式支持
-        base_style = (
-            MESSAGE_BASE_STYLES[style_key]
-            + """
-            img {
-                display: inline-block !important;  /* 行内公式强制显示 */
-                max-width: 100% !important;
-                height: auto !important;
-                vertical-align: middle !important;
-                background-color: white !important;
-                border: 1px solid red !important;  /* 临时添加红色边框，验证是否加载 */
-            }
-        """
-        )
-        self.content_browser.setStyleSheet(base_style)
-
-        # 关键修复：允许加载外部资源
-        self.content_browser.setOpenExternalLinks(True)
-        self.content_browser.setOpenLinks(True)
-        # 打印设置状态（新增）
-        print(f"QTextBrowser 外部链接开启: {self.content_browser.openExternalLinks()}")
-        print(f"QTextBrowser 自动打开链接: {self.content_browser.openLinks()}")
+        # 应用样式
+        self.content_browser.setStyleSheet(MESSAGE_BASE_STYLES[style_key])
 
     def set_content(self, content, role):
         """设置内容并渲染"""
@@ -200,11 +156,11 @@ class MessageWidget(QWidget):
         if role == "assistant":
             # 如果是思考内容，使用思考样式
             if self.is_thinking:
-                html_content = qtext_markdown_utils.markdown_to_html(content)
+                html_content = markdown_utils.markdown_to_html(content)
                 self.content_browser.setHtml(html_content)
                 self.content_browser.document().setDefaultStyleSheet(THINKING_STYLE)
             else:
-                html_content = qtext_markdown_utils.markdown_to_html(content)
+                html_content = markdown_utils.markdown_to_html(content)
                 self.content_browser.setHtml(html_content)
                 self.content_browser.document().setDefaultStyleSheet(ASSIST_STYLE)
         else:

@@ -3,7 +3,6 @@ import sys
 from PyQt5.QtWidgets import QApplication, QScrollArea, QScrollBar
 from PyQt5.QtGui import QPalette, QColor, QIcon
 from PyQt5.QtCore import QTimer
-from PyQt5.QtNetwork import QNetworkAccessManager
 from ui.main_window import MainWindow
 from core.config_manager import get_config
 from ui.styles import APP_STYLESHEET, ENHANCED_SCROLLBAR_STYLE
@@ -67,17 +66,6 @@ def main():
             break
     else:
         print("警告: 未找到应用图标文件")
-
-    # 全局网络管理器监控错误
-    global_network_manager = QNetworkAccessManager()
-    global_network_manager.sslErrors.connect(
-        lambda reply, errors: print(f"SSL错误: {[e.errorString() for e in errors]}")
-    )
-    global_network_manager.finished.connect(
-        lambda reply: print(
-            f"请求完成: {reply.url().toString()}, 状态: {reply.errorString()}"
-        )
-    )
 
     window.show()
     sys.exit(app.exec_())
