@@ -89,6 +89,23 @@ class ChatComponent(QWidget):
         self.search_timer.setSingleShot(True)
         self.search_timer.timeout.connect(self.perform_search)
 
+        # 添加测试消息
+        test_message = self.message_display.add_message_by_role(
+            "assistant",
+            "行内公式测试: $E = mc^2$, 和 $\\sum_{i=1}^n i = \\frac{n(n+1)}{2}$\n\n",
+        )
+        test_message.append_content(
+            "块级公式测试:\n"
+            "$$\n"
+            "\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}\n"
+            "$$\n"
+            "以及:\n"
+            "\\[\n"
+            "f(x) = \\frac{1}{\\sigma\\sqrt{2\\pi}} e^{-\\frac{(x-\\mu)^2}{2\\sigma^2}}\n"
+            "\\]"
+        )
+        test_message.force_render()
+
     def safe_update_time(self):
         """安全更新时间显示"""
         try:
