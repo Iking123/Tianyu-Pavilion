@@ -20,10 +20,14 @@ from ui.input_panel import InputPanel  # 导入新的输入面板组件
 class ChatComponent(QWidget):
     """聊天功能组件，修复流式回复问题"""
 
-    def __init__(self, main_window=None):
+    def __init__(self, main_window=None, ini_msg=True, placeholder="输入消息..."):
         super().__init__()
         self.main_window = main_window
-        self.conversation_history = [{"role": "system", "content": get_system_prompt()}]
+        self.ini_msg = ini_msg
+        self.placeholder = placeholder
+        self.conversation_history = (
+            [{"role": "system", "content": get_system_prompt()}] if ini_msg else []
+        )
         self.worker = None
         self.timer = None
         self.worker_active = False
@@ -50,23 +54,25 @@ class ChatComponent(QWidget):
         self.message_display = MessageDisplayArea()
         splitter.addWidget(self.message_display)
 
-        # 添加初始系统消息
-        self.initial_msg = self.message_display.add_message_by_role(
-            "system", self.conversation_history[0]["content"]
-        )
+        if self.ini_msg:
+            # 添加初始系统消息
+            self.initial_msg = self.message_display.add_message_by_role(
+                "system", self.conversation_history[0]["content"]
+            )
 
-        # 创建定时器更新初始系统消息的时间
-        self.timer = QTimer()
-        self.timer.setParent(self)
-        self.timer.timeout.connect(self.safe_update_time)
-        self.timer.start(1000)
-        self.safe_update_time()
+            # 创建定时器更新初始系统消息的时间
+            self.timer = QTimer()
+            self.timer.setParent(self)
+            self.timer.timeout.connect(self.safe_update_time)
+            self.timer.start(1000)
+            self.safe_update_time()
 
         # 使用新的输入面板组件
         self.input_panel = InputPanel(
             send_callback=self.send_message,
             clear_callback=self.clear_conversation,
             show_clear_button=True,
+            placeholder=self.placeholder,
         )
         splitter.addWidget(self.input_panel)
 
@@ -125,7 +131,7 @@ class ChatComponent(QWidget):
         self.conversation_history.append({"role": "user", "content": user_input})
 
         # 创建新Worker
-        self.worker = Worker(user_input, self.conversation_history, 1)
+        self.worker = Worker(user_input, self.conversation_history)
 
         # 使用队列连接确保线程安全
         self.worker.start_thinking.connect(self.start_thinking, Qt.QueuedConnection)
@@ -193,23 +199,24 @@ class ChatComponent(QWidget):
         # 滚动到底部
         self.message_display.scroll_to_bottom()
 
-    def clear_conversation(self):
-        """清除对话历史（带确认弹窗）"""
-        # 创建确认对话框
-        reply = QMessageBox.question(
-            self,
-            "确认清除",
-            "即将清除对话历史并开启新对话，确定执行吗？",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
-        )
+    def clear_conversation(self, force=False):
+        """清除对话历史"""
+        if not force:
+            # 创建确认对话框
+            reply = QMessageBox.question(
+                self,
+                "确认清除",
+                "即将清除对话历史并开启新对话，确定执行吗？",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
 
-        # 如果用户选择否，则取消操作
-        if reply == QMessageBox.No:
-            # 使用主窗口设置状态
-            if self.main_window:
-                self.main_window.set_status("清除操作已取消")
-            return
+            # 如果用户选择否，则取消操作
+            if reply == QMessageBox.No:
+                # 使用主窗口设置状态
+                if self.main_window:
+                    self.main_window.set_status("清除操作已取消")
+                return
 
         # 停止当前工作线程
         if self.worker and self.worker.isRunning():
@@ -220,12 +227,16 @@ class ChatComponent(QWidget):
         self.message_display.clear_messages()
 
         # 重置对话历史
-        self.conversation_history = [{"role": "system", "content": get_system_prompt()}]
+        self.conversation_history = []
 
         # 添加初始系统消息
-        self.initial_msg = self.message_display.add_message_by_role(
-            "system", self.conversation_history[0]["content"]
-        )
+        if self.ini_msg:
+            self.conversation_history = [
+                {"role": "system", "content": get_system_prompt()}
+            ]
+            self.initial_msg = self.message_display.add_message_by_role(
+                "system", self.conversation_history[0]["content"]
+            )
 
         # 使用主窗口设置状态
         if self.main_window:

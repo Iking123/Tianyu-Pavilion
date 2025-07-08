@@ -128,17 +128,8 @@ def get_assist():
     return "assistant" if get_config("enable_r1") else "assistant-v3"
 
 
-# def get_system_prompt(p=1):
-#     """获取系统提示，可能含时间与用户名"""
-#     if p == 1:
-#         prompt = f"你是一个智能助手，在一个个人平台上与用户交流。{SYSTEM_PROMPT[p][get_config('enable_baidu')][get_config('enable_tavily')]}\n当前时间：{time.asctime()}"
-#         name = get_username()
-#         return f"{prompt}\n用户名：{name}" if name else prompt
-#     return ""
-
-
-def get_system_prompt(p=1):
-    """获取系统提示，包含时间、用户名和函数调用说明"""
+def get_system_prompt():
+    """获取聊天页面系统提示，包含时间、用户名和函数调用说明"""
     # 基础系统提示
     prompt = "你是一个智能助手，在一个个人平台上与用户交流。"
 

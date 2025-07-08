@@ -40,6 +40,7 @@ class InputPanel(QWidget):
         show_clear_button=False,
         threshold=None,
         placeholder="输入消息...",
+        tooltip=None,
         parent=None,
     ):
         super().__init__(parent)
@@ -51,6 +52,8 @@ class InputPanel(QWidget):
         self.threshold = threshold
         self.placeholder = placeholder
         self.init_ui()
+        if tooltip:
+            self.setToolTip(tooltip)
 
     def init_ui(self):
         layout = QVBoxLayout(self)

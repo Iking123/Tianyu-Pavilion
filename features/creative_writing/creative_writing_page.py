@@ -13,21 +13,21 @@ from PyQt5.QtGui import QIcon, QFont, QPixmap, QColor
 from PyQt5.QtCore import Qt, QSize
 
 
-class GameCard(QFrame):
-    """横向游戏卡片控件"""
+class writingCard(QFrame):
+    """横向写作卡片控件"""
 
     def __init__(self, title, description, icon_path, click_handler, parent=None):
         super().__init__(parent)
         self.setMinimumHeight(120)
         self.setStyleSheet(
             """
-            GameCard {
+            writingCard {
                 background-color: white;
                 border-radius: 10px;
                 border: 1px solid #E0E0E0;
                 margin: 10px 0;
             }
-            GameCard:hover {
+            writingCard:hover {
                 border: 2px solid #4A90E2;
                 background-color: #F5F9FF;
             }
@@ -38,7 +38,7 @@ class GameCard(QFrame):
         layout.setContentsMargins(20, 15, 20, 15)
         layout.setSpacing(20)
 
-        # 游戏图标
+        # 写作图标
         icon_label = QLabel()
         pixmap = QPixmap(icon_path)
         if pixmap.isNull():
@@ -50,18 +50,18 @@ class GameCard(QFrame):
         icon_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(icon_label)
 
-        # 游戏信息区域
+        # 写作信息区域
         info_layout = QVBoxLayout()
         info_layout.setContentsMargins(0, 0, 0, 0)
         info_layout.setSpacing(8)
 
-        # 游戏标题
+        # 写作标题
         title_label = QLabel(title)
         title_label.setFont(QFont("Arial", 14, QFont.Bold))
         title_label.setStyleSheet("color: #2C3E50;")
         info_layout.addWidget(title_label)
 
-        # 游戏描述
+        # 写作描述
         desc_label = QLabel(description)
         desc_label.setFont(QFont("Arial", 10))
         desc_label.setStyleSheet("color: #7F8C8D;")
@@ -70,8 +70,8 @@ class GameCard(QFrame):
 
         layout.addLayout(info_layout, 1)  # 添加伸缩因子使描述区域可以扩展
 
-        # 游戏按钮
-        self.play_button = QPushButton("开始\n游戏")
+        # 写作按钮
+        self.play_button = QPushButton("开始\n写作")
         self.play_button.setFixedSize(80, 80)
         self.play_button.setFont(QFont("Arial", 10))
         self.play_button.setStyleSheet(
@@ -93,8 +93,8 @@ class GameCard(QFrame):
         layout.addStretch(0)
 
 
-class GamePage(QWidget):
-    """小游戏功能页面"""
+class CreativeWritingPage(QWidget):
+    """创意写作功能页面"""
 
     def __init__(self, main_window=None):
         super().__init__()
@@ -117,7 +117,7 @@ class GamePage(QWidget):
         self.back_button.setStyleSheet(
             """
             QPushButton {
-                background-color: #34A853;
+                background-color: #AB63C0;
                 color: white;
                 border: none;
                 padding: 8px 15px;
@@ -126,14 +126,14 @@ class GamePage(QWidget):
                 font-family: Microsoft YaHei;
             }
             QPushButton:hover {
-                background-color: #2E944B;
+                background-color: #6A0DAD;
             }
         """
         )
         self.back_button.clicked.connect(self.go_back)
 
         # 页面标题
-        title_label = QLabel("小游戏")
+        title_label = QLabel("创意写作")
         title_label.setFont(QFont("Arial", 22, QFont.Bold))
         title_label.setStyleSheet("color: #2C3E50;")
 
@@ -154,7 +154,7 @@ class GamePage(QWidget):
 
         layout.addWidget(toolbar)
 
-        # 游戏列表区域
+        # 写作列表区域
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setStyleSheet("border: none; background-color: #F5F7FA;")
@@ -165,59 +165,44 @@ class GamePage(QWidget):
         container_layout.setSpacing(15)
 
         # 标题
-        games_title = QLabel("选择一个小游戏")
-        games_title.setFont(QFont("Arial", 18, QFont.Bold))
-        games_title.setStyleSheet("color: #2C3E50; margin-bottom: 20px;")
-        games_title.setAlignment(Qt.AlignCenter)
-        container_layout.addWidget(games_title)
+        writings_title = QLabel("选择一种创意写作")
+        writings_title.setFont(QFont("Arial", 18, QFont.Bold))
+        writings_title.setStyleSheet("color: #2C3E50; margin-bottom: 20px;")
+        writings_title.setAlignment(Qt.AlignCenter)
+        container_layout.addWidget(writings_title)
 
-        # 游戏卡片容器 - 使用垂直布局
-        games_container = QWidget()
-        games_layout = QVBoxLayout(games_container)
-        games_layout.setContentsMargins(0, 0, 0, 0)
-        games_layout.setSpacing(10)
+        # 写作卡片容器 - 使用垂直布局
+        writings_container = QWidget()
+        writings_layout = QVBoxLayout(writings_container)
+        writings_layout.setContentsMargins(0, 0, 0, 0)
+        writings_layout.setSpacing(10)
 
-        # 添加游戏卡片
-        games = [
+        # 添加写作卡片
+        writings = [
             {
-                "title": "成语接龙",
-                "description": "与AI进行成语接龙对战，看谁能坚持到最后！",
-                "icon": "resources/icons/idiom.png",
+                "title": "零分作文",
+                "description": "创作零分作文！",
+                "icon": "resources/icons/zero.png",
             },
-            # {
-            #     "title": "数学挑战",
-            #     "description": "挑战你的数学能力，解决各种数学难题",
-            #     "icon": "icons/math.png",
-            # },
-            # {
-            #     "title": "单词拼写",
-            #     "description": "测试你的英语词汇量，提升拼写能力",
-            #     "icon": "icons/spelling.png",
-            # },
-            # {
-            #     "title": "知识问答",
-            #     "description": "涵盖科学、历史、文化等领域的趣味问答",
-            #     "icon": "icons/quiz.png",
-            # },
         ]
 
-        for game in games:
-            # 创建闭包函数来正确捕获当前游戏的标题
+        for writing in writings:
+            # 创建闭包函数来正确捕获当前写作的标题
             def create_handler(title):
-                return lambda: self.open_game(title)
+                return lambda: self.open_writing(title)
 
-            card = GameCard(
-                game["title"],
-                game["description"],
-                game["icon"],
-                create_handler(game["title"]),  # 使用闭包正确捕获当前游戏标题
+            card = writingCard(
+                writing["title"],
+                writing["description"],
+                writing["icon"],
+                create_handler(writing["title"]),  # 使用闭包正确捕获当前写作标题
             )
-            games_layout.addWidget(card)
+            writings_layout.addWidget(card)
 
         # 添加底部留白
-        games_layout.addStretch()
+        writings_layout.addStretch()
 
-        container_layout.addWidget(games_container)
+        container_layout.addWidget(writings_container)
         scroll_area.setWidget(container)
         layout.addWidget(scroll_area)
 
@@ -226,7 +211,7 @@ class GamePage(QWidget):
         if self.main_window:
             self.main_window.switch_page(0)
 
-    def open_game(self, game_title):
-        """打开选中的游戏"""
+    def open_writing(self, writing_title):
+        """打开选中的写作"""
         if self.main_window:
-            self.main_window.open_game_page(game_title)
+            self.main_window.open_writing_page(writing_title)

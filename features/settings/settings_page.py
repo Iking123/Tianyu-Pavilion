@@ -87,7 +87,7 @@ class SettingsPage(QWidget):
         form_layout.setSpacing(15)
         form_layout.setContentsMargins(250, 15, 250, 15)
         empty_space = QWidget()
-        empty_space.setMinimumHeight(200)
+        empty_space.setMinimumHeight(120)
         empty_row = QLabel()
 
         # 用户信息设置

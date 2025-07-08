@@ -16,7 +16,7 @@ class Worker(QThread):
     start_thinking = pyqtSignal()  # 开始思考信号
     start_replying = pyqtSignal(str)  # 开始回复信号
 
-    def __init__(self, user_input, conversation_history, pageIndex):
+    def __init__(self, user_input, conversation_history, pageIndex=None):
         super().__init__()
         self.user_input = user_input
         self.conversation_history = conversation_history
@@ -34,18 +34,17 @@ class Worker(QThread):
             else:
                 model_name = "deepseek-chat"
 
-            # 更新系统提示（包含当前时间和用户名）
-            if (
-                self.conversation_history
-                and self.conversation_history[0]["role"] == "system"
-            ):
-                self.conversation_history[0]["content"] = get_system_prompt(
-                    self.pageIndex
-                )
-            else:
-                self.conversation_history.insert(
-                    0, {"role": "system", "content": get_system_prompt(self.pageIndex)}
-                )
+            # 若是聊天页面，更新系统提示（包含当前时间和用户名）
+            if self.pageIndex == 1:
+                if (
+                    self.conversation_history
+                    and self.conversation_history[0]["role"] == "system"
+                ):
+                    self.conversation_history[0]["content"] = get_system_prompt()
+                else:
+                    self.conversation_history.insert(
+                        0, {"role": "system", "content": get_system_prompt()}
+                    )
 
             # 判断是否需要百度联网搜索
             need_search = False

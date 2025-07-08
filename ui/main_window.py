@@ -16,11 +16,13 @@ from .home_page import HomePage
 from features.chat.chat_page import ChatPage
 from features.game.game_page import GamePage
 from features.interactive_novel.interactive_novel_page import InteractiveNovelPage
+from features.creative_writing.creative_writing_page import CreativeWritingPage
 from features.settings.settings_page import SettingsPage
 from .styles import *
 
-# 新增导入
+# 具体页面导入
 from features.game.idiom_solitaire_page import IdiomSolitairePage
+from features.creative_writing.zero_point_page import ZeroPointPage
 
 
 class MainWindow(QMainWindow):
@@ -62,10 +64,10 @@ class MainWindow(QMainWindow):
         self.chat_page = None
         self.game_page = None
         self.interactive_page = None
+        self.creative_page = None
         self.settings_page = None
-
-        # 存储游戏页面的字典
         self.game_pages = {}
+        self.writing_pages = {}
 
         # 默认显示主页
         self.switch_page(0)
@@ -214,7 +216,12 @@ class MainWindow(QMainWindow):
                 self.interactive_page = InteractiveNovelPage(self)
                 self.stacked_widget.addWidget(self.interactive_page)
             self.stacked_widget.setCurrentWidget(self.interactive_page)
-        elif index == 4:  # 设置页面
+        elif index == 4:  # 创意写作
+            if not self.creative_page:
+                self.creative_page = CreativeWritingPage(self)
+                self.stacked_widget.addWidget(self.creative_page)
+            self.stacked_widget.setCurrentWidget(self.creative_page)
+        elif index == 5:  # 设置页面
             if not self.settings_page:
                 self.settings_page = SettingsPage(self)
                 self.stacked_widget.addWidget(self.settings_page)
@@ -243,11 +250,10 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         """窗口关闭时清理所有页面资源"""
         # 清理聊天页面资源
-        self.chat_page.cleanup()
+        if self.chat_page:
+            self.chat_page.cleanup()
 
         super().closeEvent(event)
-
-    # ================== 新增游戏相关方法 ==================
 
     def open_game_page(self, game_name):
         """打开指定的游戏页面"""
@@ -269,3 +275,20 @@ class MainWindow(QMainWindow):
     def switch_to_game_list(self):
         """切换到游戏列表页面"""
         self.stacked_widget.setCurrentWidget(self.game_page)
+
+    def open_writing_page(self, writing_name):
+        """打开指定的写作页面"""
+        if writing_name not in self.writing_pages:
+            # 根据创意写作名称创建对应的写作页面
+            if writing_name == "零分作文":
+                self.writing_pages[writing_name] = ZeroPointPage(self)
+                # 将新写作页面添加到堆栈中
+                self.stacked_widget.addWidget(self.writing_pages[writing_name])
+
+        if writing_name in self.writing_pages:
+            # 切换到写作页面
+            self.stacked_widget.setCurrentWidget(self.writing_pages[writing_name])
+
+    def switch_to_writing_list(self):
+        """切换到写作列表页面"""
+        self.stacked_widget.setCurrentWidget(self.creative_page)

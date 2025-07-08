@@ -66,7 +66,7 @@ def markdown_to_html(content):
             font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
             font-size: 11pt;
             color: #333;
-            line-height: 1.6;
+            line-height: 1.2;
             padding: 15px;
             border: 1px solid #ffcccc;
             background-color: #fffafa;
@@ -120,7 +120,7 @@ def markdown_to_html(content):
         font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
         font-size: 11pt;
         color: #333;
-        line-height: 1.6;
+        line-height: 1.2;
     ">
         {html}
     </div>
