@@ -365,46 +365,51 @@ TOGGLE_BUTTON_STYLE_DISABLED = """
 
 MESSAGE_BASE_STYLES = {
     "assistant_regular": """
-        background-color: #F0F7FF;
-        border: 1px solid #C0D5E0;
-        border-radius: 8px;
-        padding: 0;
-        font-size: 11pt;
-        margin: 5px 0;  /* 添加外边距 */
+        QTextBrowser {
+            background-color: #F0F7FF;
+            border: 1px solid #C0D5E0;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 11pt;
+        }
     """,
     "assistant_thinking": """
-        background-color: #FFFFF0;
-        border: 1px solid #E0D5B0;
-        border-radius: 8px;
-        padding: 0;
-        font-size: 11pt;
-        margin: 5px 0;  /* 添加外边距 */
+        QTextBrowser {
+            background-color: #FFFFF0;
+            border: 1px solid #E0D5B0;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 11pt;
+        }
     """,
     "user": """
-        background-color: #E6F7ED;
-        border: 1px solid #C0E0D0;
-        border-radius: 8px;
-        padding: 0;
-        font-size: 11pt;
-        margin: 5px 0;  /* 添加外边距 */
+        QTextBrowser {
+            background-color: #E6F7ED;
+            border: 1px solid #C0E0D0;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 11pt;
+        }
     """,
     "system": """
-        background-color: #F8F8F8;
-        border: 1px solid #E0E0E0;
-        border-radius: 8px;
-        padding: 0;
-        color: #666;
-        font-style: italic;
-        font-size: 11pt;
-        margin: 5px 0;  /* 添加外边距 */
+        QTextBrowser {
+            background-color: #F8F8F8;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            padding: 12px;
+            color: #666;
+            font-style: italic;
+            font-size: 11pt;
+        }
     """,
     "default": """
-        background-color: #F8F8F8;
-        border: 1px solid #E0E0E0;
-        border-radius: 8px;
-        padding: 0;
-        color: #666;
-        font-size: 11pt;
-        margin: 5px 0;  /* 添加外边距 */
+        QTextBrowser {
+            background-color: #F8F8F8;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            padding: 12px;
+            color: #666;
+            font-size: 11pt;
+        }
     """,
 }
