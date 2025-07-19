@@ -21,7 +21,14 @@ class MessageDisplayArea(QWidget):
 
         # 创建滚动区域
         self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setWidgetResizable(True)  # 允许子控件调整大小
+
+        # 设置滚动区域的尺寸策略
+        self.scroll_area.setSizePolicy(
+            QSizePolicy.Expanding,  # 水平扩展
+            QSizePolicy.Expanding,  # 垂直扩展，但子控件决定实际高度
+        )
+
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         # +++ 确保垂直滚动条始终可用 +++
         self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
@@ -30,22 +37,23 @@ class MessageDisplayArea(QWidget):
         self.container = QWidget()
         self.container_layout = QVBoxLayout(self.container)
         self.container_layout.setAlignment(Qt.AlignTop)
-        self.container_layout.setContentsMargins(10, 10, 10, 10)
+        self.container_layout.setContentsMargins(10, 0, 10, 0)
         self.container_layout.setSpacing(15)
 
         self.scroll_area.setWidget(self.container)
         layout.addWidget(self.scroll_area)
 
-    def add_message(self, widget):
+    def add_message(self, widget, auto_scroll=True):
         """添加消息组件"""
         self.container_layout.addWidget(widget)
-        QTimer.singleShot(100, self.scroll_to_bottom)  # 延迟滚动确保布局完成
+        if auto_scroll:
+            QTimer.singleShot(100, self.scroll_to_bottom)  # 延迟滚动确保布局完成
         return widget
 
-    def add_message_by_role(self, role, content, is_thinking=False):
+    def add_message_by_role(self, role, content, is_thinking=False, auto_scroll=True):
         """通过角色和内容添加消息"""
-        widget = MessageWidget(role, content, is_thinking, parent=self)
-        return self.add_message(widget)
+        widget = MessageWidget(self, role, content, is_thinking, auto_scroll)
+        return self.add_message(widget, auto_scroll)
 
     def start_assistant_message(self, role, content, is_thinking=False):
         """开始一个新的助手消息"""
@@ -53,6 +61,21 @@ class MessageDisplayArea(QWidget):
             role, content, is_thinking
         )
         return self.current_assistant_widget
+
+    def append_to_last_message(self, content):
+        """追加到上一条消息"""
+        last_message = self.get_last_message()
+        if last_message:
+            last_message.append_content(content)
+            return True
+        return False
+
+    def finish_last_message(self):
+        """完成上一条消息"""
+        last_message = self.get_last_message()
+        if last_message:
+            last_message.force_render()
+            last_message.adjust_height()
 
     def append_to_assistant_message(self, content):
         """追加内容到当前助手消息"""
@@ -75,7 +98,9 @@ class MessageDisplayArea(QWidget):
             item = self.container_layout.takeAt(0)  # 从布局中移除
             widget = item.widget()
             if widget:
-                if isinstance(widget, MessageWidget):
+                if isinstance(widget, MessageWidget) and hasattr(
+                    widget, "height_adjust_timer"
+                ):
                     widget.height_adjust_timer.stop()
                 widget.deleteLater()
 

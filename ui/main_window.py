@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QStatusBar,
     QGridLayout,
+    QComboBox,
 )
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QFont, QColor, QPalette
@@ -18,6 +19,8 @@ from features.game.game_page import GamePage
 from features.interactive_novel.interactive_novel_page import InteractiveNovelPage
 from features.creative_writing.creative_writing_page import CreativeWritingPage
 from features.settings.settings_page import SettingsPage
+from features.character.character_editor import CharacterEditor
+from features.interactive_novel.fiction_page import InteractiveFictionPage
 from .styles import *
 
 # 具体页面导入
@@ -30,8 +33,8 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("DeepSeek 多功能小应用")
-        self.setGeometry(100, 100, 1800, 1600)  # 设置与原始聊天窗口相同的大小
+        self.setWindowTitle("天语阁")
+        self.setGeometry(100, 80, 1720, 1720)
 
         # 主部件
         central_widget = QWidget()
@@ -66,6 +69,7 @@ class MainWindow(QMainWindow):
         self.interactive_page = None
         self.creative_page = None
         self.settings_page = None
+        self.character_editor = None  # 新增角色编辑器页面
         self.game_pages = {}
         self.writing_pages = {}
 
@@ -92,14 +96,28 @@ class MainWindow(QMainWindow):
         separator.setStyleSheet("color: #999; margin: 0 5px;")
         left_layout.addWidget(separator)
 
-        # 添加新按钮
-        self.btn_r1 = QPushButton("深度思考(R1)")
-        self.btn_r1.setCheckable(True)
-        self.btn_r1.setChecked(get_config("enable_r1"))
-        self.btn_r1.setStyleSheet(self.get_button_style(get_config("enable_r1")))
-        self.btn_r1.setMaximumWidth(180)
-        self.btn_r1.clicked.connect(self.toggle_r1)
-        left_layout.addWidget(self.btn_r1)
+        # 添加模型选择下拉框
+        self.model_combobox = QComboBox()
+        self.model_combobox.addItems(
+            [
+                "DeepSeek-R1",
+                "DeepSeek-V3",
+                "Doubao-Seed-1.6-thinking",
+                "Doubao-Seed-1.6",
+            ]
+        )
+        self.model_combobox.setMaximumWidth(388)
+        current_model = get_config("model")
+        if current_model == "deepseek-reasoner":
+            self.model_combobox.setCurrentText("DeepSeek-R1")
+        elif current_model == "deepseek-chat":
+            self.model_combobox.setCurrentText("DeepSeek-V3")
+        elif current_model == "doubao-seed-1-6-thinking-250715":
+            self.model_combobox.setCurrentText("Doubao-Seed-1.6-thinking")
+        elif current_model == "doubao-seed-1-6-250615":
+            self.model_combobox.setCurrentText("Doubao-Seed-1.6")
+        self.model_combobox.currentIndexChanged.connect(self.change_model)
+        left_layout.addWidget(self.model_combobox)
 
         self.btn_tavily = QPushButton("Tavily")
         self.btn_tavily.setCheckable(True)
@@ -141,11 +159,19 @@ class MainWindow(QMainWindow):
         # 强制设置状态栏字体
         self.status_bar.setFont(QFont("Microsoft YaHei", 10))
 
-        # # 在init_status_bar方法末尾添加调试信息
-        # print(f"状态栏字体: {self.status_bar.font().family()}")
-        # print(f"滚动按钮字体: {self.scroll_button.font().family()}")
-        # print(f"R1按钮字体: {self.btn_r1.font().family()}")
-        # print(f"Tavily按钮字体: {self.btn_tavily.font().family()}")
+    def change_model(self, index):
+        new_config = get_config()
+        model_text = self.model_combobox.currentText()
+        if model_text == "DeepSeek-R1":
+            new_config["model"] = "deepseek-reasoner"
+        elif model_text == "DeepSeek-V3":
+            new_config["model"] = "deepseek-chat"
+        elif model_text == "Doubao-Seed-1.6-thinking":
+            new_config["model"] = "doubao-seed-1-6-thinking-250715"
+        elif model_text == "Doubao-Seed-1.6":
+            new_config["model"] = "doubao-seed-1-6-250615"
+        update_config(new_config)
+        self.update_status()
 
     def get_button_style(self, enabled):
         """根据状态返回按钮样式"""
@@ -175,14 +201,6 @@ class MainWindow(QMainWindow):
                     font-size: 10pt !important;
                 }
             """
-
-    def toggle_r1(self):
-        """切换 R1 深度思考状态"""
-        new_config = get_config()
-        new_config["enable_r1"] = not new_config["enable_r1"]
-        update_config(new_config)
-        self.btn_r1.setChecked(new_config["enable_r1"])
-        self.btn_r1.setStyleSheet(self.get_button_style(new_config["enable_r1"]))
 
     def toggle_tavily(self):
         """切换 Tavily 搜索状态"""
@@ -226,6 +244,11 @@ class MainWindow(QMainWindow):
                 self.settings_page = SettingsPage(self)
                 self.stacked_widget.addWidget(self.settings_page)
             self.stacked_widget.setCurrentWidget(self.settings_page)
+        elif index == 6:  # 角色编辑器页面
+            if not self.character_editor:
+                self.character_editor = CharacterEditor(self)
+                self.stacked_widget.addWidget(self.character_editor)
+            self.stacked_widget.setCurrentWidget(self.character_editor)
 
     def set_status(self, message):
         """设置状态栏消息"""
@@ -238,8 +261,6 @@ class MainWindow(QMainWindow):
     def update_status(self, message=None):
         """更新状态栏"""
         config = get_config()
-        self.btn_r1.setChecked(config["enable_r1"])
-        self.btn_r1.setStyleSheet(self.get_button_style(config["enable_r1"]))
         self.btn_tavily.setChecked(config["enable_tavily"])
         self.btn_tavily.setStyleSheet(self.get_button_style(config["enable_tavily"]))
         if message:
@@ -292,3 +313,27 @@ class MainWindow(QMainWindow):
     def switch_to_writing_list(self):
         """切换到写作列表页面"""
         self.stacked_widget.setCurrentWidget(self.creative_page)
+
+    def add_page(self, page):
+        """添加一个新页面到堆栈"""
+        self.stacked_widget.addWidget(page)
+
+    def switch_to_page(self, page):
+        """切换到指定页面"""
+        self.stacked_widget.setCurrentWidget(page)
+
+    def remove_page(self, page):
+        """从堆栈中移除指定页面并清理资源"""
+        # 确保页面存在
+        if page is None:
+            return
+
+        # 清理页面资源
+        if hasattr(page, "cleanup") and callable(page.cleanup):
+            page.cleanup()
+
+        # 从堆栈中移除页面
+        self.stacked_widget.removeWidget(page)
+
+        # 删除页面对象
+        page.deleteLater()

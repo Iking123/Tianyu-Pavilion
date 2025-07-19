@@ -13,43 +13,99 @@ from .styles import *  # 导入样式
 from core.config_manager import get_config
 from funcs import *
 from .highlight import *
+from core.character_manager import get_character_by_id
 
 
 @delay_update
 class MessageWidget(QWidget):
     """通用的消息控件"""
 
-    def __init__(self, role, content, is_thinking=False, parent=None):
+    def __init__(self, parent, role, content, is_thinking=False, auto_scroll=True):
         super().__init__(parent)
         self._adjusting = False
         self.message_display = parent
         self.is_thinking = is_thinking  # 标识是否是思考内容
+        self.auto_scroll = auto_scroll
         # 设置大小策略 - 水平扩展，垂直固定
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(5, 15, 5, 15)
+        layout.setContentsMargins(5, 0, 5, 0)
         layout.setAlignment(Qt.AlignTop)  # 顶部对齐
 
-        # 角色标签
-        role_name = ""
-        match role:
-            case "user":
-                role_name = "你"
-            case "assistant":
-                role_name = f"DeepSeek-R1{"（思考）" if is_thinking else ""}"
-            case "assistant-v3":
-                role_name = "DeepSeek-V3"
+        # 如果不是旁白（即role不为空），则考虑角色标签与头像：
+        if role:
+            # 创建头像容器
+            avatar_widget = QWidget()
+            avatar_layout = QHBoxLayout(avatar_widget)
+            avatar_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+            avatar_layout.setContentsMargins(0, 0, 10, 0)  # 右边距10px
+
+            # 尝试获取角色头像
+            character = None
+            if role.startswith("character_"):
+                character_id = role[10:]
+                character = get_character_by_id(character_id)
+
+            # 如果有角色头像，或者是助手
+            if character and character.get("avatar") or role.startswith("assistant_"):
+                avatar_label = QLabel()
+                if role.startswith("assistant_DeepSeek"):
+                    avatar_path = "resources/images/deepseek.png"
+                elif role.startswith("assistant_豆包"):
+                    avatar_path = "resources/images/doubao.png"
+                else:
+                    avatar_path = character["avatar"]
+
+                # 加载头像（支持绝对路径和相对路径）
+                if os.path.exists(avatar_path):
+                    pixmap = QPixmap(avatar_path)
+                else:
+                    # 尝试从资源目录加载
+                    resource_path = os.path.join(
+                        "resources", "images", os.path.basename(avatar_path)
+                    )
+                    if os.path.exists(resource_path):
+                        pixmap = QPixmap(resource_path)
+                    else:
+                        pixmap = QPixmap(":/icons/default_avatar.png")  # 使用默认头像
+
+                # 缩放头像
+                pixmap = pixmap.scaled(
+                    60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation
+                )
+                avatar_label.setPixmap(pixmap)
+                avatar_layout.addWidget(avatar_label)
+
+            # 角色标签
+            role_name = ""
+            if role.startswith("assistant_"):
+                role_name = role[10:]
                 role = "assistant"
-            case "system":
-                role_name = "系统"
-        role_label = QLabel(role_name)
-        role_font = QFont()
-        role_font.setBold(True)
-        role_font.setPointSize(12)
-        role_label.setFont(role_font)
-        role_label.setStyleSheet(MESSAGE_STYLES[role])
-        layout.addWidget(role_label)
+            elif role.startswith("character_"):
+                role_name = character.get("name", role[10:]) if character else role[10:]
+                role = "assistant"  # 将character视为assistant类型
+            else:
+                match role:
+                    case "user":
+                        role_name = "你"
+                    case "system":
+                        role_name = "系统"
+            if is_thinking:
+                role_name += "（思考）"
+
+            role_label = QLabel(role_name)
+            role_font = QFont()
+            role_font.setBold(True)
+            role_font.setPointSize(12)
+            role_label.setFont(role_font)
+            role_label.setStyleSheet(MESSAGE_STYLES[role])
+
+            # 将角色名称添加到头像容器
+            avatar_layout.addWidget(role_label)
+
+            # 将头像容器添加到主布局
+            layout.addWidget(avatar_widget)
 
         # 使用 QTextBrowser 替代 QTextEdit - 提供更好的 HTML 支持
         self.content_browser = QTextBrowser()
@@ -61,16 +117,15 @@ class MessageWidget(QWidget):
         self.content_browser.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.content_browser.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        # 设置大小策略 - 水平扩展，垂直根据内容调整
-        self.content_browser.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.MinimumExpanding
-        )
+        # 设置大小策略
+        self.content_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
-        # 设置最小宽度
+        # 设置最小宽度和固定高度
         self.content_browser.setMinimumWidth(600)
+        self.content_browser.setFixedHeight(0)
 
-        # 设置内容 - 使用 Markdown 渲染
-        self.set_content(content, role)
+        # 设置初始内容
+        self.set_content(content)
 
         # 连接高度调整信号
         self.content_browser.document().documentLayout().documentSizeChanged.connect(
@@ -100,11 +155,9 @@ class MessageWidget(QWidget):
         # 设置基础样式（使用集中管理的样式）
         self.apply_base_style(role, is_thinking)
 
-        # 仅保留外部链接设置
+        # 外部链接开启
         self.content_browser.setOpenExternalLinks(True)
         self.content_browser.setOpenLinks(True)
-        print(f"QTextBrowser 外部链接开启: {self.content_browser.openExternalLinks()}")
-        print(f"QTextBrowser 自动打开链接: {self.content_browser.openLinks()}")
 
     def on_request_finished(self, reply):
         url = reply.url().toString()
@@ -117,10 +170,11 @@ class MessageWidget(QWidget):
 
     def render_content(self):
         """渲染内容"""
-        if self.role == "assistant":
+        # 如果是助手/旁白消息，就渲染
+        if self.role == "assistant" or self.role == "":
             # 使用工具函数渲染Markdown
             html_content = qtext_markdown_utils.markdown_to_html(self.raw_content)
-            print(f"渲染的HTML内容: {html_content}")  # 新增打印
+            # print(f"渲染的HTML内容: {html_content}")
             self.content_browser.setHtml(html_content)
 
             # 关键修改：根据是否为思考内容设置样式
@@ -187,34 +241,14 @@ class MessageWidget(QWidget):
         )
         self.content_browser.setStyleSheet(base_style)
 
-        # 关键修复：允许加载外部资源
-        self.content_browser.setOpenExternalLinks(True)
-        self.content_browser.setOpenLinks(True)
-        # 打印设置状态（新增）
-        print(f"QTextBrowser 外部链接开启: {self.content_browser.openExternalLinks()}")
-        print(f"QTextBrowser 自动打开链接: {self.content_browser.openLinks()}")
-
-    def set_content(self, content, role):
-        """设置内容并渲染"""
-        # 如果是助手消息，使用 Markdown 渲染
-        if role == "assistant":
-            # 如果是思考内容，使用思考样式
-            if self.is_thinking:
-                html_content = qtext_markdown_utils.markdown_to_html(content)
-                self.content_browser.setHtml(html_content)
-                self.content_browser.document().setDefaultStyleSheet(THINKING_STYLE)
-            else:
-                html_content = qtext_markdown_utils.markdown_to_html(content)
-                self.content_browser.setHtml(html_content)
-                self.content_browser.document().setDefaultStyleSheet(ASSIST_STYLE)
-        else:
-            self.content_browser.setPlainText(content)
+    def set_content(self, content):
+        """单纯的设置内容"""
+        self.content_browser.setPlainText(content)
 
     def request_height_adjustment(self):
         """请求高度调整（防抖）"""
         # 停止之前的计时器（如果存在）
-        if self.height_adjust_timer.isActive():
-            self.height_adjust_timer.stop()
+        self.__del__()
 
         # 启动新的计时器（延迟200毫秒）
         self.height_adjust_timer.start(200)
@@ -223,12 +257,16 @@ class MessageWidget(QWidget):
 
     def __del__(self):
         """确保定时器在对象销毁时停止"""
-        if hasattr(self, "height_adjust_timer"):
+        if hasattr(self, "height_adjust_timer") and self.height_adjust_timer.isActive():
             self.height_adjust_timer.stop()
 
     def adjust_height(self):
         """根据内容自动调整高度，增加安全检查"""
-        if self.message_display is None or self._adjusting:
+        if (
+            not hasattr(self, "message_display")
+            or not self.message_display
+            or self._adjusting
+        ):
             return
         self._adjusting = True
 
@@ -241,8 +279,11 @@ class MessageWidget(QWidget):
             if not scrollbar:
                 return
 
-            old_position = scrollbar.value()
-            at_bottom = old_position == scrollbar.maximum()
+            at_bottom = (
+                True
+                if self.auto_scroll and scrollbar.value() == scrollbar.maximum()
+                else False
+            )
 
             doc = self.content_browser.document()
             if not doc:
@@ -252,8 +293,8 @@ class MessageWidget(QWidget):
             new_height = int(doc_height) + 30  # 30px缓冲
 
             # 仅当需要更新时更新
-            if self.content_browser.minimumHeight() < new_height:
-                self.content_browser.setMinimumHeight(new_height)
+            if self.content_browser.height() < new_height:
+                self.content_browser.setFixedHeight(new_height)
                 self.request_delayed_update()
 
             if at_bottom:
@@ -264,6 +305,17 @@ class MessageWidget(QWidget):
             print(f"Height adjustment error: {e}")
 
         self._adjusting = False
+
+    def render_content(self):
+        """渲染内容"""
+        if self.role == "assistant" or self.role == "":
+            html_content = qtext_markdown_utils.markdown_to_html(self.raw_content)
+            self.content_browser.setHtml(html_content)
+        else:
+            self.content_browser.setPlainText(self.raw_content)
+
+        # 立即调整高度
+        self.adjust_height()
 
     def handle_link_click(self, url):
         """处理链接点击 - 在外部浏览器打开"""

@@ -52,7 +52,7 @@ class ChatPage(QWidget):
         self.back_button.clicked.connect(self.go_back)
 
         # 页面标题
-        title_label = QLabel("DeepSeek聊天器")
+        title_label = QLabel("天语阁聊天器")
         title_label.setFont(QFont("Arial", 22, QFont.Bold))
         title_label.setStyleSheet("color: #2C3E50;")
 

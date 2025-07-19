@@ -1,4 +1,3 @@
-# chat_component.py
 from PyQt5.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -20,11 +19,14 @@ from ui.input_panel import InputPanel  # 导入新的输入面板组件
 class ChatComponent(QWidget):
     """聊天功能组件，修复流式回复问题"""
 
-    def __init__(self, main_window=None, ini_msg=True, placeholder="输入消息..."):
+    def __init__(
+        self, main_window=None, ini_msg=True, placeholder="输入消息...", threshold=None
+    ):
         super().__init__()
         self.main_window = main_window
         self.ini_msg = ini_msg
         self.placeholder = placeholder
+        self.threshold = threshold
         self.conversation_history = (
             [{"role": "system", "content": get_system_prompt()}] if ini_msg else []
         )
@@ -72,6 +74,7 @@ class ChatComponent(QWidget):
             send_callback=self.send_message,
             clear_callback=self.clear_conversation,
             show_clear_button=True,
+            threshold=self.threshold,
             placeholder=self.placeholder,
         )
         splitter.addWidget(self.input_panel)
@@ -89,28 +92,33 @@ class ChatComponent(QWidget):
         self.search_timer.setSingleShot(True)
         self.search_timer.timeout.connect(self.perform_search)
 
-        # 添加测试消息
-        test_message = self.message_display.add_message_by_role(
-            "assistant",
-            "行内公式测试: $E = mc^2$, 和 $\\sum_{i=1}^n i = \\frac{n(n+1)}{2}$\n\n",
-        )
-        test_message.append_content(
-            "块级公式测试:\n"
-            "$$\n"
-            "\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}\n"
-            "$$\n"
-            "以及:\n"
-            "\\[\n"
-            "f(x) = \\frac{1}{\\sigma\\sqrt{2\\pi}} e^{-\\frac{(x-\\mu)^2}{2\\sigma^2}}\n"
-            "\\]"
-        )
-        test_message.force_render()
+        # # 添加测试消息
+        # test_message = self.message_display.add_message_by_role(
+        #     "",
+        #     "测试\n",
+        #     # "行内公式测试: $E = mc^2$, 和 $\\sum_{i=1}^n i = \\frac{n(n+1)}{2}$\n\n"
+        #     # "测试\n"
+        #     # "测试\n"
+        #     # "测测又试试\n",
+        # )
+        # # test_message.append_content(
+        # #     "- 列表测试\n"
+        # #     "- 块级公式测试:\n"
+        # #     "$$\n"
+        # #     "\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}\n"
+        # #     "$$\n"
+        # #     "- 以及:\n"
+        # #     "\\[\n"
+        # #     "f(x) = \\frac{1}{\\sigma\\sqrt{2\\pi}} e^{-\\frac{(x-\\mu)^2}{2\\sigma^2}}\n"
+        # #     "\\]"
+        # # )
+        # test_message.force_render()
 
     def safe_update_time(self):
         """安全更新时间显示"""
         try:
             # 直接更新初始消息的内容
-            self.initial_msg.set_content(get_system_prompt(), "system")
+            self.initial_msg.set_content(get_system_prompt())
         except Exception as e:
             print(f"更新时间时出错: {e}")
             self.stop_and_clean_timer()
@@ -124,8 +132,8 @@ class ChatComponent(QWidget):
         except:
             pass
 
-    def send_message(self, user_input):
-        if not user_input:
+    def send_message(self, message, role="user", display=True):
+        if not message:
             return
 
         # 重要：先停止并清理旧的Worker
@@ -143,12 +151,13 @@ class ChatComponent(QWidget):
         # 设置工作状态
         self.worker_active = True
 
-        # 添加用户消息
-        self.message_display.add_message_by_role("user", user_input)
-        self.conversation_history.append({"role": "user", "content": user_input})
+        # 添加发送的消息
+        if display:
+            self.message_display.add_message_by_role(role, message)
+        self.conversation_history.append({"role": role, "content": message})
 
         # 创建新Worker
-        self.worker = Worker(user_input, self.conversation_history)
+        self.worker = Worker(message, self.conversation_history)
 
         # 使用队列连接确保线程安全
         self.worker.start_thinking.connect(self.start_thinking, Qt.QueuedConnection)
@@ -164,10 +173,10 @@ class ChatComponent(QWidget):
 
         self.worker.start()
 
-    def start_thinking(self):
+    def start_thinking(self, role):
         """开始新的思考消息"""
         self.thinking_widget = self.message_display.add_message_by_role(
-            "assistant", "", is_thinking=True
+            role, "", is_thinking=True
         )
         self.message_display.scroll_to_bottom()
 
@@ -193,7 +202,7 @@ class ChatComponent(QWidget):
                 else:
                     self.message_display.append_to_assistant_message(content)
             else:
-                self.message_display.add_message_by_role(role, content)
+                self.message_display.add_message_by_role(role, content, is_thinking)
                 self.message_display.scroll_to_bottom()
         except Exception as e:
             print(f"添加消息内容时出错: {e}")

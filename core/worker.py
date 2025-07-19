@@ -13,7 +13,7 @@ class Worker(QThread):
     update_signal = pyqtSignal(str, str, bool)  # 角色, 内容, 是否是思考内容
     status_signal = pyqtSignal(str)
     search_complete = pyqtSignal(str)  # 结果
-    start_thinking = pyqtSignal()  # 开始思考信号
+    start_thinking = pyqtSignal(str)  # 开始思考信号
     start_replying = pyqtSignal(str)  # 开始回复信号
 
     def __init__(self, user_input, conversation_history, pageIndex=None):
@@ -29,10 +29,7 @@ class Worker(QThread):
     def run(self):
         try:
             # 根据配置选择模型
-            if get_config("enable_r1"):
-                model_name = "deepseek-reasoner"
-            else:
-                model_name = "deepseek-chat"
+            model_name = get_model()
 
             # 若是聊天页面，更新系统提示（包含当前时间和用户名）
             if self.pageIndex == 1:
@@ -139,14 +136,14 @@ class Worker(QThread):
                 payload["tool_choice"] = "auto"
 
             headers = {
-                "Authorization": f"Bearer {get_config('api_key')}",
+                "Authorization": f"Bearer {get_api_key()}",
                 "Content-Type": "application/json",
             }
 
             try:
                 # 发送请求
                 self.response = requests.post(
-                    f"{get_config('base_url')}/chat/completions",
+                    f"{get_base_url()}/chat/completions",
                     json=payload,
                     headers=headers,
                     stream=True,
@@ -162,9 +159,10 @@ class Worker(QThread):
                 current_tool_call = None
                 full_response = ""
                 assist = get_assist()
-                in_thinking = (
-                    assist == "assistant-v3"
-                )  # 非常重要：因为V3不会深度思考啊啊啊！所以默认“在思考”，这样就会触发我们的“开始回复”！！！
+
+                # 状态跟踪变量
+                has_received_reasoning = False  # 是否收到过思考内容
+                has_started_replying = False  # 是否已开始回复
                 reasoning_content = ""
 
                 for line in self.response.iter_lines():
@@ -218,21 +216,26 @@ class Worker(QThread):
                                     reasoning = delta.get("reasoning_content", "")
                                     if reasoning:
                                         reasoning_content += reasoning
-                                        if not in_thinking:
-                                            self.start_thinking.emit()
+
+                                        # 如果是第一次收到思考内容，触发思考信号
+                                        if not has_received_reasoning:
+                                            self.start_thinking.emit(assist)
                                             self.status_signal.emit("🤔 正在思考...")
-                                            in_thinking = True
+                                            has_received_reasoning = True
+
                                         self.update_signal.emit(assist, reasoning, True)
 
                                     # 处理回复内容
                                     content = delta.get("content", "")
                                     if content:
-                                        if in_thinking:
+                                        # 如果是第一次收到回复内容，触发回复信号
+                                        if not has_started_replying:
                                             self.start_replying.emit(assist)
                                             self.status_signal.emit(
                                                 "💬 正在生成回复..."
                                             )
-                                            in_thinking = False
+                                            has_started_replying = True
+
                                         self.update_signal.emit(assist, content, False)
                                         full_response += content
                             except json.JSONDecodeError:

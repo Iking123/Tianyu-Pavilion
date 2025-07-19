@@ -115,10 +115,15 @@ class SettingsPage(QWidget):
         form_layout.addWidget(api_label)
         form_layout.addWidget(empty_row)
 
-        self.api_key_input = QLineEdit()
-        self.api_key_input.setPlaceholderText("输入 DeepSeek API 密钥")
-        self.api_key_input.setText(get_config("api_key"))
-        form_layout.addRow("DeepSeek API 密钥:", self.api_key_input)
+        self.deepseek_api_key_input = QLineEdit()
+        self.deepseek_api_key_input.setPlaceholderText("输入 DeepSeek API 密钥")
+        self.deepseek_api_key_input.setText(get_config("deepseek_api_key"))
+        form_layout.addRow("DeepSeek API 密钥:", self.deepseek_api_key_input)
+
+        self.volcengine_api_key_input = QLineEdit()
+        self.volcengine_api_key_input.setPlaceholderText("输入火山方舟（豆包）API 密钥")
+        self.volcengine_api_key_input.setText(get_config("volcengine_api_key"))
+        form_layout.addRow("火山方舟（豆包）API 密钥:", self.volcengine_api_key_input)
 
         self.tavily_api_key_input = QLineEdit()
         self.tavily_api_key_input.setPlaceholderText("输入 Tavily API 密钥")
@@ -193,8 +198,9 @@ class SettingsPage(QWidget):
         # 获取输入值
         try:
             username = self.username_input.text().strip()
-            api_key = self.api_key_input.text().strip()
             tavily_api_key = self.tavily_api_key_input.text().strip()
+            deepseek_api_key = self.deepseek_api_key_input.text().strip()
+            volcengine_api_key = self.volcengine_api_key_input.text().strip()
             enable_r1 = self.r1_checkbox.isChecked()
             enable_tavily = self.tavily_checkbox.isChecked()
             enable_baidu = self.baidu_checkbox.isChecked()
@@ -206,7 +212,8 @@ class SettingsPage(QWidget):
         # 构建新配置
         new_config = get_config().copy()
         new_config["username"] = username
-        new_config["api_key"] = api_key
+        new_config["deepseek_api_key"] = deepseek_api_key
+        new_config["volcengine_api_key"] = volcengine_api_key
         new_config["tavily_api_key"] = tavily_api_key
         new_config["enable_r1"] = enable_r1
         new_config["enable_tavily"] = enable_tavily

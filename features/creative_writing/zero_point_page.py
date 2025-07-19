@@ -76,12 +76,10 @@ class ZeroPointPage(QWidget):
         layout.addWidget(toolbar)
 
         # 创建聊天组件
-        self.chat_component = ChatComponent(self.main_window, False, "输入作文标题")
+        self.chat_component = ChatComponent(self.main_window, False, "输入作文标题", 10)
         layout.addWidget(self.chat_component)
         ipp = self.chat_component.input_panel
-        ipp.send_callback, ipp.threshold = self.send_message, 10
-        ipp.setToolTip("至多10字")
-        ipp.input_field.textChanged.connect(ipp.limit_length)
+        ipp.send_callback = self.send_message
 
         def print_method_source(method):
             if inspect.ismethod(method):

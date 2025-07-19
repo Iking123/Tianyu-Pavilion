@@ -215,24 +215,57 @@ ASSIST_STYLE = """
     }
     
     /* 数学公式样式 */
-    .math-formula {{
-        font-family: monospace;
+    img[src*=".svg"] {
+        max-width: 100%;
+        height: auto;
+        background-color: transparent;
+        border: none !important;
+    }
+
+    /* 行内公式样式必须与函数中设置的一致 */
+    img[src*=".svg"][style*="inline"] {
+        max-height: 1.1em !important;  /* 关键：加!important确保优先 */
+        margin: 0 1px !important;
+    }
+
+    /* 块级公式同理 */
+    img[src*=".svg"][style*="block"] {
+        max-height: 2.5em !important;
+        margin: 0.3em auto !important;
+    }
+    
+    /* 数学公式容器样式 */
+    .math-container {
+        text-align: center;
+        margin: 10px 0;
+    }
+    
+    /* 数学公式错误回退样式 */
+    .math-fallback {
+        font-family: 'Times New Roman', serif;
+        font-style: italic;
+        color: #333;
+    }
+    
+    .math-fallback.inline {
+        display: inline;
         background-color: #f8f9fa;
         padding: 2px 5px;
         border-radius: 3px;
-        margin: 2px 0;
-    }}
-    .math-formula.inline {{
-        display: inline;
         border: 1px solid #e0e0e0;
-    }}
-    .math-formula.block {{
+        font-size: 0.95em;
+    }
+    
+    .math-fallback.block {
         display: block;
         text-align: center;
+        background-color: #f8f9fa;
         padding: 10px;
         margin: 15px 0;
         border: 1px dashed #c0c0c0;
-    }}
+        border-radius: 4px;
+        font-size: 1.1em;
+    }
     """
 
 THINKING_STYLE = """
@@ -283,6 +316,54 @@ THINKING_STYLE = """
         color: #E65100;  /* 深橙色标题 */
         margin-top: 15px;
         margin-bottom: 10px;
+    }
+    
+    /* Thinking 模式下的 SVG 数学公式样式 */
+    /* 数学公式样式 */
+    img[src*=".svg"] {
+        max-width: 100%;
+        height: auto;
+        background-color: transparent;
+        border: none !important;
+    }
+
+    /* 行内公式样式必须与函数中设置的一致 */
+    img[src*=".svg"][style*="inline"] {
+        max-height: 1.1em !important;  /* 关键：加!important确保优先 */
+        margin: 0 1px !important;
+    }
+
+    /* 块级公式同理 */
+    img[src*=".svg"][style*="block"] {
+        max-height: 2.5em !important;
+        margin: 0.3em auto !important;
+    }
+    
+    /* Thinking 模式下的数学公式错误回退样式 */
+    .math-fallback {
+        font-family: 'Times New Roman', serif;
+        font-style: italic;
+        color: #666;
+    }
+    
+    .math-fallback.inline {
+        display: inline;
+        background-color: #FFFFF0;
+        padding: 2px 5px;
+        border-radius: 3px;
+        border: 1px solid #E0D5B0;
+        font-size: 0.95em;
+    }
+    
+    .math-fallback.block {
+        display: block;
+        text-align: center;
+        background-color: #FFFFF0;
+        padding: 10px;
+        margin: 15px 0;
+        border: 1px dashed #D0C090;
+        border-radius: 4px;
+        font-size: 1.1em;
     }
 """
 
@@ -337,6 +418,24 @@ BUTTON_STYLES = {
         }
         QPushButton:hover {
             background-color: #3A7BC8;
+        }
+    """,
+    "option": """
+        QPushButton {
+            background-color: #5DADE2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 15px;
+            font-size: 30px;
+            font-family: Microsoft YaHei;
+            min-width: 120px;
+        }
+        QPushButton:hover {
+            background-color: #3498DB;
+        }
+        QPushButton:pressed {
+            background-color: #2E86C1;
         }
     """,
 }
@@ -404,8 +503,8 @@ MESSAGE_BASE_STYLES = {
     """,
     "default": """
         QTextBrowser {
-            background-color: #F8F8F8;
-            border: 1px solid #E0E0E0;
+            background-color: #FCF9F5; /* 接近米色的浅暖色调，像旧书页的质感 */
+            border: 1px solid #EFE6DD; /* 淡奶茶色边框，柔和不突兀 */
             border-radius: 8px;
             padding: 12px;
             color: #666;

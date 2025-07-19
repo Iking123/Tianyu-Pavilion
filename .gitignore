@@ -2,16 +2,18 @@
 __pycache__/
 *.pyc
 
-# 忽略配置文件（保留模板）
+# 忽略配置文件（保留模板）与硬编码文件
 config.*
+hardcode.py
 
 # 忽略系统/IDE 文件
 .DS_Store
 .idea/
 .vscode/
 
-# 忽略一些测试文件
+# 忽略一些测试文件和缓存文件
 test_*
+formula_cache/
 
 # 忽略构建时的文件
-/build/
+build/

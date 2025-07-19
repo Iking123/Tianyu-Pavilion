@@ -10,8 +10,8 @@ from PyQt5.QtWidgets import (
     QFrame,
     QGraphicsDropShadowEffect,
 )
-from PyQt5.QtGui import QFont, QColor, QTransform
-from PyQt5.QtCore import Qt, QPoint, QPropertyAnimation, QEasingCurve, pyqtProperty
+from PyQt5.QtGui import QFont, QColor, QFontDatabase
+from PyQt5.QtCore import Qt, QPoint, QPropertyAnimation, QEasingCurve
 
 
 class HomePage(QWidget):
@@ -33,15 +33,20 @@ class HomePage(QWidget):
 
         # 标题区域
         title_layout = QVBoxLayout()
-        title_label = QLabel("DeepSeek 多功能小应用")
-        title_label.setFont(QFont("Microsoft YaHei", 36, QFont.Bold))
+        title_label = QLabel("天语阁")
+        title_label.setFont(QFont("DFPShaoNvW5-GB", 48, QFont.Bold))
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet("color: #2C3E50; margin-bottom: 10px;")
+        # 添加 !important 和显式 font-family，避免被main.py中的全局样式表覆盖
+        title_label.setStyleSheet(
+            f"color: #2C3E50 !important; margin-bottom: 10px; font-family: 'DFPShaoNvW5-GB' !important;"
+        )
 
         subtitle_label = QLabel("Created by Iking")
-        subtitle_label.setFont(QFont("Microsoft YaHei", 16))
+        subtitle_label.setFont(QFont(".Heiti J", 20))
         subtitle_label.setAlignment(Qt.AlignCenter)
-        subtitle_label.setStyleSheet("color: #7f8c8d; margin-bottom: 40px;")
+        subtitle_label.setStyleSheet(
+            f"color: #7f8c8d; margin-bottom: 40px; font-family: '.Heiti J' !important;"
+        )
 
         empty_space = QWidget()
 
@@ -67,14 +72,29 @@ class HomePage(QWidget):
         self.interactive_btn = self.create_function_button("交互小说", "#f39c12")
         self.creative_btn = self.create_function_button("创意写作", "#9b59b6")
 
+        # 中央按钮区域布局
+        central_layout = QVBoxLayout()
+        central_layout.setSpacing(20)
+        central_layout.setAlignment(Qt.AlignCenter)
+
+        # 角色编辑器按钮
+        self.character_btn = self.create_circle_button("角色编辑器", "#8F97BB")
+        central_layout.addWidget(self.character_btn)
+
         # 设置按钮
-        self.settings_btn = self.create_circle_button()
-        grid_layout.addWidget(self.settings_btn, 1, 2)
+        self.settings_btn = self.create_circle_button("设置", "#95a5a6")
+        central_layout.addWidget(self.settings_btn)
+
+        # 创建中央按钮容器
+        central_widget = QWidget()
+        central_widget.setLayout(central_layout)
 
         grid_layout.addWidget(self.chat_btn, 0, 0)
         grid_layout.addWidget(self.game_btn, 0, 1)
+        grid_layout.addWidget(central_widget, 0, 2, 2, 1)  # 占据两行
         grid_layout.addWidget(self.interactive_btn, 1, 0)
         grid_layout.addWidget(self.creative_btn, 1, 1)
+
         layout.addLayout(grid_layout)
         layout.addStretch(1)
 
@@ -83,7 +103,12 @@ class HomePage(QWidget):
         self.game_btn.clicked.connect(lambda: self.switch_to_page(2))
         self.interactive_btn.clicked.connect(lambda: self.switch_to_page(3))
         self.creative_btn.clicked.connect(lambda: self.switch_to_page(4))
-        self.settings_btn.clicked.connect(lambda: self.switch_to_page(5))
+        self.settings_btn.clicked.connect(
+            lambda: self.switch_to_page(5)
+        )  # 连接到设置页面
+        self.character_btn.clicked.connect(
+            lambda: self.switch_to_page(6)
+        )  # 连接到角色编辑器页面
 
         # 设置动画效果
         self.setup_animations()
@@ -143,27 +168,46 @@ class HomePage(QWidget):
 
         return button
 
-    def create_circle_button(self):
+    def create_circle_button(self, text="", color="#95a5a6"):
         """创建带阴影的圆形按钮"""
-        button = QPushButton()
-        button.setFixedSize(240, 240)
+        button = QPushButton()  # 只用图标，不要显示字！
+        button.setFixedSize(200, 200)  # 稍微缩小以适应两个按钮
+        button.setFont(QFont("Microsoft YaHei", 14, QFont.Bold))
 
-        img_path = os.path.join(self.resources_dir, "settings_bg.png")
+        # 根据按钮类型设置不同的背景图片
+        if text == "设置":
+            img_filename = "settings_bg.png"
+        elif text == "角色编辑器":
+            img_filename = "character_bg.png"
+        else:
+            img_filename = "settings_bg.png"  # 默认图片
+
+        img_path = os.path.join(self.resources_dir, img_filename)
         abs_path = os.path.abspath(img_path).replace("\\", "/")
+
+        # 渐变色
+        base_color = QColor(color)
+        darker_color = base_color.darker(110)
+        lighter_color = base_color.lighter(130)
 
         button.setStyleSheet(
             f"""
             QPushButton {{
-                background-color: #F5F5F5;
-                border-radius: 120px;
+                background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 {lighter_color.name()}, stop:1 {darker_color.name()});
+                border-radius: 100px;
                 border: 2px solid rgba(255, 255, 255, 0.3);
+                color: white;
+                font-weight: bold;
+                text-align: center;
                 border-image: url({abs_path}) 0 0 0 0 stretch stretch;
             }}
             QPushButton:hover {{
-                background-color: #E4E4E4;
+                background-color: {base_color.name()};
+                border: 2px solid #FFFF00;
             }}
             QPushButton:pressed {{
-                background-color: #E4E4E4;
+                background-color: {darker_color.name()};
             }}
         """
         )
@@ -245,16 +289,18 @@ class HomePage(QWidget):
             btn.enterEvent = enter
             btn.leaveEvent = leave
 
-        # 设置按钮悬停动画
-        def settings_enter(e):
-            # 增加阴影效果
-            self.settings_btn.shadow_effect.setBlurRadius(30)
-            self.settings_btn.shadow_effect.setOffset(0, 15)
+        # 圆形按钮悬停动画（设置按钮和角色编辑器按钮）
+        for btn in [self.settings_btn, self.character_btn]:
 
-        def settings_leave(e):
-            # 恢复阴影效果
-            self.settings_btn.shadow_effect.setBlurRadius(20)
-            self.settings_btn.shadow_effect.setOffset(0, 10)
+            def circle_enter(e, b=btn):
+                # 增加阴影效果
+                b.shadow_effect.setBlurRadius(30)
+                b.shadow_effect.setOffset(0, 15)
 
-        self.settings_btn.enterEvent = settings_enter
-        self.settings_btn.leaveEvent = settings_leave
+            def circle_leave(e, b=btn):
+                # 恢复阴影效果
+                b.shadow_effect.setBlurRadius(15)
+                b.shadow_effect.setOffset(0, 12)
+
+            btn.enterEvent = circle_enter
+            btn.leaveEvent = circle_leave

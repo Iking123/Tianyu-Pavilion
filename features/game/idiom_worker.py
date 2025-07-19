@@ -2,8 +2,7 @@ import re
 import json
 from PyQt5.QtCore import QThread, pyqtSignal
 import requests
-from core.config_manager import get_config
-from core.search_utils import baidu_search
+from core.config_manager import get_model, get_api_key, get_base_url
 
 
 class IdiomWorker(QThread):
@@ -25,7 +24,7 @@ class IdiomWorker(QThread):
     def run(self):
         try:
             headers = {
-                "Authorization": f"Bearer {get_config('api_key')}",
+                "Authorization": f"Bearer {get_api_key()}",
                 "Content-Type": "application/json",
             }
 
@@ -34,16 +33,8 @@ class IdiomWorker(QThread):
                 {"role": "system", "content": self.system_prompt},
             ]
 
-            # self.status_signal.emit("🔍 正在通过百度搜索并提取内容...")
-            # search_results = baidu_search(self.current_idiom)
-            # if search_results:
-            #     self.search_complete.emit("百度搜索", search_results)
-            #     messages.append({"role": "system", "content": search_results})
-
             payload = {
-                "model": (
-                    "deepseek-reasoner" if get_config("enable_r1") else "deepseek-chat"
-                ),
+                "model": get_model(),
                 "messages": messages,
                 "response_format": {"type": "json_object"},
                 "temperature": 0.3,
@@ -51,7 +42,7 @@ class IdiomWorker(QThread):
             }
 
             response = requests.post(
-                f"{get_config('base_url')}/chat/completions",
+                f"{get_base_url()}/chat/completions",
                 headers=headers,
                 json=payload,
                 stream=True,  # 启用流式传输

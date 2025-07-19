@@ -1,12 +1,13 @@
 import os
 import sys
 from PyQt5.QtWidgets import QApplication, QScrollArea, QScrollBar
-from PyQt5.QtGui import QPalette, QColor, QIcon
+from PyQt5.QtGui import QPalette, QColor, QIcon, QFontDatabase
 from PyQt5.QtCore import QTimer
 from PyQt5.QtNetwork import QNetworkAccessManager
 from ui.main_window import MainWindow
 from core.config_manager import get_config
 from ui.styles import APP_STYLESHEET, ENHANCED_SCROLLBAR_STYLE
+from core.character_summary import character_summary
 
 
 def main():
@@ -39,6 +40,10 @@ def main():
     app_font = app.font()
     app_font.setPointSize(11)
     app.setFont(app_font)
+
+    # 加载外部TTF字体
+    QFontDatabase.addApplicationFont("resources/font/1610424926410123.ttf")
+    QFontDatabase.addApplicationFont("resources/font/黑白心中文字体.TTF")
 
     # 设置全局滚轮速率
     app.setWheelScrollLines(get_config("speed_slider"))

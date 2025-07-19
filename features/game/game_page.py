@@ -10,15 +10,20 @@ from PyQt5.QtWidgets import (
     QFrame,
 )
 from PyQt5.QtGui import QIcon, QFont, QPixmap, QColor
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtCore import Qt, QSize, pyqtSignal
 
 
 class GameCard(QFrame):
-    """横向游戏卡片控件"""
+    """横向游戏卡片控件 - 可点击的长条形按钮"""
+
+    # 定义点击信号
+    clicked = pyqtSignal()
 
     def __init__(self, title, description, icon_path, click_handler, parent=None):
         super().__init__(parent)
+        self.click_handler = click_handler
         self.setMinimumHeight(120)
+        self.setCursor(Qt.PointingHandCursor)  # 设置鼠标指针为手型
         self.setStyleSheet(
             """
             GameCard {
@@ -70,27 +75,40 @@ class GameCard(QFrame):
 
         layout.addLayout(info_layout, 1)  # 添加伸缩因子使描述区域可以扩展
 
-        # 游戏按钮
-        self.play_button = QPushButton("开始\n游戏")
-        self.play_button.setFixedSize(80, 80)
-        self.play_button.setFont(QFont("Arial", 10))
-        self.play_button.setStyleSheet(
+    def mousePressEvent(self, event):
+        """鼠标点击事件"""
+        if event.button() == Qt.LeftButton:
+            self.click_handler()
+            self.clicked.emit()
+        super().mousePressEvent(event)
+
+    def enterEvent(self, event):
+        """鼠标进入事件 - 增强悬停效果"""
+        self.setStyleSheet(
             """
-            QPushButton {
-                background-color: #4A90E2;
-                color: white;
-                border: none;
-                border-radius: 8px;
-            }
-            QPushButton:hover {
-                background-color: #3A7BC8;
+            GameCard {
+                background-color: #F5F9FF;
+                border-radius: 10px;
+                border: 2px solid #4A90E2;
+                margin: 10px 0;
             }
         """
         )
-        self.play_button.clicked.connect(click_handler)
-        layout.addWidget(self.play_button, 0, Qt.AlignRight)
+        super().enterEvent(event)
 
-        layout.addStretch(0)
+    def leaveEvent(self, event):
+        """鼠标离开事件 - 恢复原始样式"""
+        self.setStyleSheet(
+            """
+            GameCard {
+                background-color: white;
+                border-radius: 10px;
+                border: 1px solid #E0E0E0;
+                margin: 10px 0;
+            }
+        """
+        )
+        super().leaveEvent(event)
 
 
 class GamePage(QWidget):

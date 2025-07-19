@@ -1,5 +1,18 @@
+import re
 from PyQt5.QtCore import QObject, pyqtSlot, QTimer, QDateTime
-from PyQt5.QtWidgets import QScrollBar, QScrollArea
+from PyQt5.QtWidgets import (
+    QScrollBar,
+    QScrollArea,
+    QPushButton,
+    QLabel,
+    QHBoxLayout,
+    QVBoxLayout,
+    QWidget,
+    QSizePolicy,
+)
+from PyQt5.QtGui import QPixmap, QIcon, QPainter, QFont, QColor
+from PyQt5.QtCore import Qt, QSize
+from PyQt5 import QtWidgets
 import sys
 import os
 
@@ -60,7 +73,8 @@ def delay_update(widget_class):
 
         @pyqtSlot()
         def request_delayed_update(self):
-            self._delay_timer.start(50)  # 合并50ms内的更新请求
+            if hasattr(self, "_delay_timer"):
+                self._delay_timer.start(50)  # 合并50ms内的更新请求
 
         @pyqtSlot()
         def _commit_delayed_update(self):
@@ -81,3 +95,20 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
+
+
+def check_suffix_condition(s: str, target: str) -> bool:
+    """
+    判断字符串s是否满足：任意后缀均不为target的任意前缀。
+    若满足则返回True，否则返回False。
+    """
+    n = len(target)
+
+    # 遍历字符串s的每个起始位置i（生成所有后缀）
+    for i in range(len(s)):
+        # 截取当前后缀的前min(n, len(s)-i)个字符
+        suffix_head = s[i : i + n]
+        # 检查target是否以该子串开头（即该子串是target的前缀）
+        if target.startswith(suffix_head):
+            return False
+    return True

@@ -15,14 +15,15 @@ KEY_PATH = "config.key"
 # 默认配置
 DEFAULT_CONFIG = {
     "version": "1.0",
-    "base_url": "https://api.deepseek.com/v1",
-    "api_key": "",
+    "deepseek_api_key": "",
+    "volcengine_api_key": "",
     "tavily_api_key": "",
     "username": "",
     "enable_r1": False,
     "enable_tavily": False,
     "enable_baidu": True,
     "speed_slider": 8,
+    "model": "deepseek-chat",
 }
 
 # 真正的版本
@@ -123,9 +124,38 @@ def get_username(show_developer=True):
     )
 
 
+def get_model():
+    """获取现在的模型"""
+    return get_config("model")
+
+
 def get_assist():
     """获取现在的助手名"""
-    return "assistant" if get_config("enable_r1") else "assistant-v3"
+    model = get_model()
+    if model == "deepseek-reasoner":
+        return "assistant_DeepSeek-R1"
+    elif model == "deepseek-chat":
+        return "assistant_DeepSeek-V3"
+    elif model == "doubao-seed-1-6-thinking-250715":
+        return "assistant_豆包1.6 Thinking"
+    elif model == "doubao-seed-1-6-250615":
+        return "assistant_豆包1.6"
+
+
+def get_base_url():
+    """获取现在的base_url"""
+    model = get_model()
+    if model.startswith("deepseek"):
+        return "https://api.deepseek.com/v1"
+    return "https://ark.cn-beijing.volces.com/api/v3"
+
+
+def get_api_key():
+    """获取现在的api_key"""
+    model = get_model()
+    if model.startswith("deepseek"):
+        return get_config("deepseek_api_key")
+    return get_config("volcengine_api_key")
 
 
 def get_system_prompt():
