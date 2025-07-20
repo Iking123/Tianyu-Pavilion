@@ -1,4 +1,5 @@
 import os
+import sys
 from PyQt5.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -12,6 +13,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QFont, QColor, QFontDatabase
 from PyQt5.QtCore import Qt, QPoint, QPropertyAnimation, QEasingCurve
+from funcs import resource_path
 
 
 class HomePage(QWidget):
@@ -55,11 +57,9 @@ class HomePage(QWidget):
         title_layout.addWidget(empty_space)
         layout.addLayout(title_layout)
 
-        self.resources_dir = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),  # 向上退两级到项目根目录
-            "resources",
-            "images",
-        )
+        # 获取资源基础路径
+        base_path = getattr(sys, "_MEIPASS", os.path.dirname(os.path.dirname(__file__)))
+        self.resources_dir = os.path.join(base_path, "resources", "images")
 
         # 功能方块网格布局
         grid_layout = QGridLayout()
@@ -131,10 +131,9 @@ class HomePage(QWidget):
             "交互小说": "interactive_bg.png",
             "创意写作": "creative_writing_bg.png",
         }
-        img_path = os.path.join(self.resources_dir, img_map[text])
 
-        # 使用绝对路径并转换路径分隔符
-        abs_path = os.path.abspath(img_path).replace("\\", "/")
+        # 使用resource_path处理图片路径
+        img_path = resource_path(os.path.join("resources", "images", img_map[text]))
 
         button.setStyleSheet(
             f"""
@@ -145,7 +144,7 @@ class HomePage(QWidget):
                 color: white;
                 text-align: center;
                 border: 2px solid rgba(255, 255, 255, 0.3);
-                border-image: url({abs_path}) 0 0 0 0 stretch stretch;
+                border-image: url({img_path}) 0 0 0 0 stretch stretch;
             }}
             QPushButton:hover {{
                 border: 2px solid #FFFF00;
@@ -182,8 +181,8 @@ class HomePage(QWidget):
         else:
             img_filename = "settings_bg.png"  # 默认图片
 
-        img_path = os.path.join(self.resources_dir, img_filename)
-        abs_path = os.path.abspath(img_path).replace("\\", "/")
+        # 使用resource_path处理图片路径
+        img_path = resource_path(os.path.join("resources", "images", img_filename))
 
         # 渐变色
         base_color = QColor(color)
@@ -200,7 +199,7 @@ class HomePage(QWidget):
                 color: white;
                 font-weight: bold;
                 text-align: center;
-                border-image: url({abs_path}) 0 0 0 0 stretch stretch;
+                border-image: url({img_path}) 0 0 0 0 stretch stretch;
             }}
             QPushButton:hover {{
                 background-color: {base_color.name()};

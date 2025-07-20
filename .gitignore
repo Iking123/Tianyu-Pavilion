@@ -17,3 +17,6 @@ formula_cache/
 
 # 忽略构建时的文件
 build/
+
+# 忽略单目录打包下的文件
+dist/天语阁/

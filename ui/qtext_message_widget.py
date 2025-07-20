@@ -14,6 +14,7 @@ from core.config_manager import get_config
 from funcs import *
 from .highlight import *
 from core.character_manager import get_character_by_id
+from funcs import resource_path
 
 
 @delay_update
@@ -54,28 +55,21 @@ class MessageWidget(QWidget):
                     avatar_path = "resources/images/deepseek.png"
                 elif role.startswith("assistant_豆包"):
                     avatar_path = "resources/images/doubao.png"
+                elif role.startswith("assistant"):
+                    avatar_path = ""
                 else:
                     avatar_path = character["avatar"]
 
-                # 加载头像（支持绝对路径和相对路径）
+                # 加载头像
+                avatar_path = resource_path(avatar_path)
                 if os.path.exists(avatar_path):
                     pixmap = QPixmap(avatar_path)
-                else:
-                    # 尝试从资源目录加载
-                    resource_path = os.path.join(
-                        "resources", "images", os.path.basename(avatar_path)
+                    # 缩放头像
+                    pixmap = pixmap.scaled(
+                        60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation
                     )
-                    if os.path.exists(resource_path):
-                        pixmap = QPixmap(resource_path)
-                    else:
-                        pixmap = QPixmap(":/icons/default_avatar.png")  # 使用默认头像
-
-                # 缩放头像
-                pixmap = pixmap.scaled(
-                    60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation
-                )
-                avatar_label.setPixmap(pixmap)
-                avatar_layout.addWidget(avatar_label)
+                    avatar_label.setPixmap(pixmap)
+                    avatar_layout.addWidget(avatar_label)
 
             # 角色标签
             role_name = ""

@@ -94,7 +94,8 @@ def resource_path(relative_path):
         # 正常开发环境
         base_path = os.path.abspath(".")
 
-    return os.path.join(base_path, relative_path)
+    # 处理Windows路径中的反斜杠问题
+    return os.path.join(base_path, relative_path).replace("\\", "/")
 
 
 def check_suffix_condition(s: str, target: str) -> bool:

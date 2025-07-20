@@ -27,6 +27,8 @@ class SettingsPage(QWidget):
     def __init__(self, main_window=None):
         super().__init__()
         self.main_window = main_window
+        # 保存初始滚动速度用于比较
+        self.initial_speed_slider = get_config("speed_slider")
 
         # 主布局
         layout = QVBoxLayout(self)
@@ -162,8 +164,8 @@ class SettingsPage(QWidget):
 
         layout.addLayout(form_layout)
 
-        # 保存按钮
-        save_btn = QPushButton("保存并重启")
+        # 保存按钮（修改为"保存"）
+        save_btn = QPushButton("保存")
         save_btn.setFont(QFont("Microsoft Yahei", 12, QFont.Bold))
         save_btn.setStyleSheet(
             """
@@ -184,11 +186,21 @@ class SettingsPage(QWidget):
         save_btn.clicked.connect(self.save_settings)
 
     def save_settings(self):
-        """保存设置，然后重启应用"""
+        """保存设置，不再自动重启"""
+        # 检查滚动速度是否被修改
+        try:
+            new_speed = int(self.speed_slider_input.currentText())
+            speed_changed = new_speed != self.initial_speed_slider
+        except:
+            speed_changed = False
+
+        # 根据滚动速度是否修改显示不同的提示
+        message = "是否保存？" + ("（重启后生效）" if speed_changed else "")
+
         reply = QMessageBox.question(
             self,
             "确认保存",
-            "是否保存？",
+            message,
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
@@ -222,28 +234,17 @@ class SettingsPage(QWidget):
 
         # 保存配置
         update_config(new_config)
-        self.main_window.update_status("设置已保存，应用即将重启...")
 
-        # 延迟重启，让用户看到提示
-        QTimer.singleShot(1500, self.restart_application)  # 1.5秒后重启
+        # 更新状态栏提示
+        if self.main_window:
+            if speed_changed:
+                self.main_window.update_status(
+                    "设置已保存！需要重启应用才能使鼠标滚动速度生效"
+                )
+            else:
+                self.main_window.update_status("设置已保存！")
 
     def go_back(self):
         """返回主页"""
         if self.main_window:
             self.main_window.switch_page(0)
-
-    def restart_application(self):
-        """重启应用程序"""
-        # 关闭当前应用
-        if self.main_window:
-            self.main_window.close()
-
-        # 重启应用
-        python = sys.executable  # 获取当前Python解释器路径
-        script = os.path.join(os.getcwd(), "main.py")  # 主程序路径
-
-        # 使用subprocess启动新进程
-        subprocess.Popen([python, script])
-
-        # 退出当前进程
-        QApplication.quit()

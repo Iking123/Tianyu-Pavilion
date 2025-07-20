@@ -8,10 +8,29 @@ from ui.main_window import MainWindow
 from core.config_manager import get_config
 from ui.styles import APP_STYLESHEET, ENHANCED_SCROLLBAR_STYLE
 from core.character_summary import character_summary
+from funcs import resource_path
 
 
 def main():
     app = QApplication(sys.argv)
+
+    # === Windows专属优化 ===
+    if sys.platform == "win32":
+        # 1. 设置AppUserModelID加速启动
+        try:
+            import ctypes
+
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                "TianYuGe.App"
+            )
+        except Exception as e:
+            print(f"Windows优化设置失败: {e}")
+
+        # 2. 禁用DPI虚拟化，避免界面模糊
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(1)
+        except:
+            pass
 
     # 设置应用样式
     app.setStyle("Fusion")
@@ -42,8 +61,10 @@ def main():
     app.setFont(app_font)
 
     # 加载外部TTF字体
-    QFontDatabase.addApplicationFont("resources/font/1610424926410123.ttf")
-    QFontDatabase.addApplicationFont("resources/font/黑白心中文字体.TTF")
+    QFontDatabase.addApplicationFont(
+        resource_path("resources/font/1610424926410123.ttf")
+    )
+    QFontDatabase.addApplicationFont(resource_path("resources/font/黑白心中文字体.TTF"))
 
     # 设置全局滚轮速率
     app.setWheelScrollLines(get_config("speed_slider"))

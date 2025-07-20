@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (
     QStatusBar,
     QGridLayout,
     QComboBox,
+    QMessageBox,
 )
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QFont, QColor, QPalette
@@ -205,6 +206,14 @@ class MainWindow(QMainWindow):
     def toggle_tavily(self):
         """切换 Tavily 搜索状态"""
         new_config = get_config()
+        if not new_config["enable_tavily"] and not new_config["tavily_api_key"]:
+            QMessageBox.warning(
+                self,
+                "启用失败",
+                "• 您还没有设置Tavily API！\n\n"
+                f"• 如果想用Tavily搜索，请在设置页面填写并保存 Tavily API 密钥！",
+            )
+            return
         new_config["enable_tavily"] = not new_config["enable_tavily"]
         update_config(new_config)
         self.btn_tavily.setChecked(new_config["enable_tavily"])

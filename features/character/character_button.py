@@ -15,6 +15,7 @@ from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt
 import os
 from ui.message_display import MessageDisplayArea
+from funcs import resource_path
 
 
 class CharacterButton(QFrame):
@@ -51,14 +52,23 @@ class CharacterButton(QFrame):
         # 角色头像
         icon_label = QLabel()
         fixed_height = 100  # 固定高度
-        if self.character_data.get("avatar") and os.path.exists(
-            self.character_data["avatar"]
-        ):
-            pixmap = QPixmap(self.character_data["avatar"])
-        elif os.path.exists("default_avatar.png"):
-            pixmap = QPixmap("default_avatar.png")
+
+        # 获取头像路径
+        avatar_path = None
+        if self.character_data.get("avatar"):
+            # 使用resource_path处理头像路径
+            avatar_path = resource_path(self.character_data["avatar"])
         else:
-            pixmap = QPixmap()  # 使用空图标
+            # 尝试默认头像
+            default_avatar = resource_path("resources/images/default_avatar.png")
+            if os.path.exists(default_avatar):
+                avatar_path = default_avatar
+
+        if avatar_path and os.path.exists(avatar_path):
+            pixmap = QPixmap(avatar_path)
+        else:
+            # 如果都不存在，则创建一个空图片
+            pixmap = QPixmap()
 
         if not pixmap.isNull():
             # 按高度等比例缩放
@@ -232,9 +242,13 @@ class CharacterDetailDialog(QDialog):
         avatar_label = QLabel()
         avatar_label.setFixedSize(264, 350)  # 固定头像尺寸
         avatar_label.setAlignment(Qt.AlignCenter)
+        avatar_path = None
+        if self.character.get("avatar"):
+            # 使用resource_path处理头像路径
+            avatar_path = resource_path(self.character["avatar"])
 
-        if self.character.get("avatar") and os.path.exists(self.character["avatar"]):
-            pixmap = QPixmap(self.character["avatar"])
+        if avatar_path and os.path.exists(avatar_path):
+            pixmap = QPixmap(avatar_path)
             scaled_pixmap = pixmap.scaled(
                 264, 350, Qt.KeepAspectRatio, Qt.SmoothTransformation
             )

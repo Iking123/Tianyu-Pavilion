@@ -1,26 +1,27 @@
-# DeepSeekApp.spec
-# 使用命令: pyinstaller DeepSeekApp.spec
+# build.spec
+# 使用命令: pyinstaller build.spec
 
 from PyInstaller.building.build_main import Analysis, PYZ, EXE, COLLECT
 
 block_cipher = None
 
 # 应用名称和图标
-app_name = "DeepSeekApp"
+app_name = "天语阁"
 app_icon = "resources/icons/icon.ico"
 
 # 添加所有资源文件和代码目录
 added_files = [
-    # 资源目录
-    ("resources/icons", "resources/icons"),
-    ("resources/images", "resources/images"),
+    # 资源目录 - 包含所有子目录
+    ("resources", "resources"),  # 改为包含整个resources目录
     # 核心代码
     ("core", "core"),
-    # 功能模块
+    # 功能模块 - 更新所有子模块
     ("features/chat", "features/chat"),
     ("features/game", "features/game"),
     ("features/interactive_novel", "features/interactive_novel"),
     ("features/settings", "features/settings"),
+    ("features/character", "features/character"),
+    ("features/creative_writing", "features/creative_writing"),
     # UI模块
     ("ui", "ui"),
     # 单个文件
@@ -47,14 +48,21 @@ a = Analysis(
         "pygments",
         "pygments.styles",
         "pygments.lexers",
-        # 其他可能的依赖
+        # 其他依赖
         "requests",
         "bs4",
         "lxml",
         "html2text",
+        "jieba",  # 新增分词库
         # 项目特定模块
         "core",
         "features",
+        "features.character",
+        "features.chat",
+        "features.creative_writing",
+        "features.game",
+        "features.interactive_novel",
+        "features.settings",
         "ui",
     ],
     hookspath=[],
@@ -78,15 +86,15 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name=app_name,
+    name="天语阁",  # 应用名称为天语阁
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,  # 禁用UPX压缩以提高启动速度
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,  # 不显示控制台窗口
-    icon=app_icon,  # 应用图标
+    console=False,
+    icon=app_icon,
     disable_windowed_tracker=False,
     argv_emulation=False,
     target_arch=None,

@@ -12,6 +12,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QIcon, QFont, QPixmap, QColor
 from PyQt5.QtCore import Qt, QSize
 
+from funcs import resource_path
+
 
 class writingCard(QFrame):
     """横向写作卡片控件"""
@@ -182,7 +184,7 @@ class CreativeWritingPage(QWidget):
             {
                 "title": "零分作文",
                 "description": "创作零分作文！",
-                "icon": "resources/icons/zero.png",
+                "icon": resource_path("resources/icons/zero.png"),
             },
         ]
 

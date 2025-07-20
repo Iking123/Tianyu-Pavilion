@@ -12,6 +12,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QIcon, QFont, QPixmap, QColor
 from PyQt5.QtCore import Qt, QSize, pyqtSignal
 
+from funcs import resource_path
+
 
 class GameCard(QFrame):
     """横向游戏卡片控件 - 可点击的长条形按钮"""
@@ -200,7 +202,7 @@ class GamePage(QWidget):
             {
                 "title": "成语接龙",
                 "description": "与AI进行成语接龙对战，看谁能坚持到最后！",
-                "icon": "resources/icons/idiom.png",
+                "icon": resource_path("resources/icons/idiom.png"),
             },
             # {
             #     "title": "数学挑战",
