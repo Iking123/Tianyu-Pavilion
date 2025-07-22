@@ -1,12 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QTextBrowser, QSizePolicy
 from PyQt5.QtGui import QFont, QTextCursor, QDesktopServices, QTextCharFormat, QColor
-from PyQt5.QtCore import Qt, QUrl, QTimer, QObject
-from PyQt5.QtNetwork import (
-    QNetworkAccessManager,
-    QNetworkRequest,
-    QSslConfiguration,
-    QNetworkReply,
-)
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QEvent
+from PyQt5.QtNetwork import QNetworkReply
 import time
 from . import qtext_markdown_utils  # 导入Markdown工具
 from .styles import *  # 导入样式
@@ -21,6 +16,8 @@ from funcs import resource_path
 class MessageWidget(QWidget):
     """通用的消息控件"""
 
+    option_clicked = pyqtSignal(str)  # 定义点击信号，传递选项内容
+
     def __init__(self, parent, role, content, is_thinking=False, auto_scroll=True):
         super().__init__(parent)
         self._adjusting = False
@@ -34,8 +31,36 @@ class MessageWidget(QWidget):
         layout.setContentsMargins(5, 0, 5, 0)
         layout.setAlignment(Qt.AlignTop)  # 顶部对齐
 
-        # 如果不是旁白（即role不为空），则考虑角色标签与头像：
-        if role:
+        # 使用 QTextBrowser 替代 QTextEdit - 提供更好的 HTML 支持
+        self.content_browser = QTextBrowser()
+        self.content_browser.setOpenExternalLinks(True)  # 允许打开外部链接
+        self.content_browser.setOpenLinks(False)  # 禁止打开内部链接
+        self.content_browser.anchorClicked.connect(self.handle_link_click)
+
+        # 禁用所有滚动条
+        self.content_browser.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.content_browser.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        # 设置大小策略
+        self.content_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
+        # 设置最小宽度和固定高度
+        self.content_browser.setMinimumWidth(600)
+        self.content_browser.setFixedHeight(0)
+
+        # 设置初始内容
+        self.set_content(content)
+
+        # 为选项消息添加点击事件支持
+        if role == "option":
+            # 设置鼠标悬停样式
+            self.setCursor(Qt.PointingHandCursor)
+            self.content_browser.setCursor(Qt.PointingHandCursor)
+            self.content_browser.viewport().setCursor(Qt.PointingHandCursor)
+            # 安装事件过滤器以捕获点击
+            self.content_browser.viewport().installEventFilter(self)
+        # 如果不是选项，也不是旁白（即role不为空），则考虑角色标签与头像：
+        elif role:
             # 创建头像容器
             avatar_widget = QWidget()
             avatar_layout = QHBoxLayout(avatar_widget)
@@ -101,26 +126,6 @@ class MessageWidget(QWidget):
             # 将头像容器添加到主布局
             layout.addWidget(avatar_widget)
 
-        # 使用 QTextBrowser 替代 QTextEdit - 提供更好的 HTML 支持
-        self.content_browser = QTextBrowser()
-        self.content_browser.setOpenExternalLinks(True)  # 允许打开外部链接
-        self.content_browser.setOpenLinks(False)  # 禁止打开内部链接
-        self.content_browser.anchorClicked.connect(self.handle_link_click)
-
-        # 禁用所有滚动条
-        self.content_browser.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.content_browser.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-
-        # 设置大小策略
-        self.content_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-
-        # 设置最小宽度和固定高度
-        self.content_browser.setMinimumWidth(600)
-        self.content_browser.setFixedHeight(0)
-
-        # 设置初始内容
-        self.set_content(content)
-
         # 连接高度调整信号
         self.content_browser.document().documentLayout().documentSizeChanged.connect(
             self.request_height_adjustment
@@ -152,6 +157,22 @@ class MessageWidget(QWidget):
         # 外部链接开启
         self.content_browser.setOpenExternalLinks(True)
         self.content_browser.setOpenLinks(True)
+
+    def eventFilter(self, obj, event):
+        """为了选项消息的事件过滤器方法"""
+        if (
+            hasattr(self, "role")
+            and self.role == "option"
+            and obj is self.content_browser.viewport()
+        ):
+            if (
+                event.type() == QEvent.MouseButtonRelease
+                and event.button() == Qt.LeftButton
+            ):
+                # 触发选项点击信号
+                self.option_clicked.emit(self.raw_content)
+                return True
+        return super().eventFilter(obj, event)
 
     def on_request_finished(self, reply):
         url = reply.url().toString()
@@ -216,6 +237,8 @@ class MessageWidget(QWidget):
             style_key = "user"
         elif role == "system":
             style_key = "system"
+        elif role == "option":  # 新增选项样式
+            style_key = "option"
         else:
             style_key = "default"
 

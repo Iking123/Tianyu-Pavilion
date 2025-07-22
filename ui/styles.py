@@ -367,12 +367,13 @@ THINKING_STYLE = """
     }
 """
 
-# 不同角色的消息样式
+# 不同消息，“角色名称”部分的样式
 MESSAGE_STYLES = {
     "": """color: #4A90E2;""",
     "assistant": """color: #50B7C1;""",
     "user": """color: #888;""",
     "system": """color: #4A90E2;""",
+    "option": """color: black;""",
 }
 
 BUTTON_STYLES = {
@@ -500,6 +501,13 @@ MESSAGE_BASE_STYLES = {
             font-style: italic;
             font-size: 11pt;
         }
+    """,
+    "option": """
+        color: black;
+        background-color: white;
+        border: 1px solid black;
+        border-radius: 4px;
+        padding: 10px;
     """,
     "default": """
         QTextBrowser {

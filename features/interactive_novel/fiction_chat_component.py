@@ -32,19 +32,19 @@ class FictionChatComponent(ChatComponent):
         self.parser = FictionParser()  # 创建解析器实例
         self.current_options = []
         self.option_buttons = []
-        self.option_button_group = QButtonGroup(self)
-        self.option_button_group.buttonClicked.connect(self.on_option_selected)
+        # self.option_button_group = QButtonGroup(self)
+        # self.option_button_group.buttonClicked.connect(self.on_option_selected)
 
-        # 将选项区域直接插入到输入面板上方
-        self.options_widget = QWidget()
-        self.options_layout = QHBoxLayout(self.options_widget)
-        self.options_layout.setContentsMargins(0, 0, 0, 0)  # 上下左右无间距
-        self.options_layout.setSpacing(10)
-        self.options_widget.setVisible(False)
+        # # 将选项区域直接插入到输入面板上方
+        # self.options_widget = QWidget()
+        # self.options_layout = QHBoxLayout(self.options_widget)
+        # self.options_layout.setContentsMargins(0, 0, 0, 0)  # 上下左右无间距
+        # self.options_layout.setSpacing(10)
+        # self.options_widget.setVisible(False)
 
-        # 直接插入到输入面板上方（利用父类布局结构）
-        splitter = self.findChild(QSplitter)  # 获取父类的分割器
-        splitter.insertWidget(1, self.options_widget)  # 插入到输入面板前
+        # # 直接插入到输入面板上方（利用父类布局结构）
+        # splitter = self.findChild(QSplitter)  # 获取父类的分割器
+        # splitter.insertWidget(1, self.options_widget)  # 插入到输入面板前
 
         # # 开局选项
         # self.show_options(["开局", "开局。", "开局！"])
@@ -106,40 +106,45 @@ class FictionChatComponent(ChatComponent):
         self.parser = FictionParser()
 
     def show_options(self, options):
-        """显示选项按钮"""
+        """显示选项消息"""
         # 清除现有选项
         self.clear_options()
         self.current_options = options
 
-        # 创建选项按钮
-        for i, option in enumerate(options):
-            btn = QPushButton(f"[{i+1}] {option}")
-            btn.setStyleSheet(BUTTON_STYLES["option"])
-            btn.setFixedHeight(50)
-            self.options_layout.addWidget(btn)
-            self.option_buttons.append(btn)
-            self.option_button_group.addButton(btn, i)
-
-        # 显示选项区域
-        self.options_widget.setVisible(True)
+        # 创建选项消息
+        for option in options:
+            # 添加选项消息，role设为"option"
+            option_widget = self.message_display.add_message_by_role(
+                "option", option, auto_scroll=True
+            )
+            # 连接选项点击信号
+            option_widget.option_clicked.connect(self.on_option_message_clicked)
 
     def clear_options(self):
-        """清除当前选项"""
-        for btn in self.option_buttons:
-            self.options_layout.removeWidget(btn)
-            btn.deleteLater()
-        self.option_buttons = []
-        self.current_options = []
-        self.options_widget.setVisible(False)
+        """清除    清除所有选项消息
+        移除message_display中所有role为"option"的消息
+        """
+        if not hasattr(self, "message_display"):
+            return
 
-    def on_option_selected(self, button):
-        """处理选项选择"""
-        index = self.option_button_group.id(button)
-        if 0 <= index < len(self.current_options):
-            # 发送选择的选项
-            option_text = self.current_options[index]
-            self.send_message(option_text)
-            self.clear_options()
+        # 获取所有消息
+        all_messages = self.message_display.get_all_messages()
+        # 找出所有选项消息
+        option_messages = [msg for msg in all_messages if msg.role == "option"]
+
+        # 移除选项消息
+        for msg in option_messages:
+            self.message_display.container_layout.removeWidget(msg)
+            msg.deleteLater()
+
+        self.current_options = []
+
+    def on_option_message_clicked(self, option_text):
+        """处理选项消息点击"""
+        # 发送选择的选项
+        self.send_message(option_text)
+        # 清除所有选项消息
+        self.clear_options()
 
     def send_message(self, message, role="user", display=True):
         """发送消息前清除选项"""
