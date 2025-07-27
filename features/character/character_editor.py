@@ -25,6 +25,8 @@ from core.character_manager import (
     delete_character,
     get_character_by_id,
 )
+from core.config_manager import get_assist
+from ui.components import GoBackButton
 from ui.input_panel import CustomTextEdit
 from .character_button import *
 from ui.styles import BUTTON_STYLES
@@ -57,26 +59,7 @@ class CharacterEditor(QWidget):
         toolbar_layout.setContentsMargins(10, 5, 10, 5)
 
         # 返回按钮
-        self.back_button = QPushButton("← 返回主页")
-        self.back_button.setIcon(QIcon.fromTheme("go-previous"))
-        self.back_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #4285F4;
-                color: white;
-                border: none;
-                padding: 8px 15px;
-                border-radius: 5px;
-                font-size: 8pt;
-                font-family: Microsoft YaHei;
-            }
-            QPushButton:hover {
-                background-color: #3367D6;
-            }
-        """
-        )
-        self.back_button.clicked.connect(self.go_back)
-        toolbar_layout.addWidget(self.back_button)
+        self.back_button = GoBackButton(self, "返回主页")
 
         # 标题
         title_label = QLabel("角色编辑器")
@@ -84,7 +67,7 @@ class CharacterEditor(QWidget):
         title_label.setStyleSheet("color: #2C3E50;")
 
         # 这样才能真正居中！
-        button_width = self.back_button.sizeHint().width()
+        button_width = self.back_button.width()
         toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
         toolbar_layout.addSpacerItem(
             QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
@@ -323,17 +306,21 @@ class CharacterEditor(QWidget):
             self.reset_mode()
         elif self.current_mode == "summary":  # 新增总结模式处理
             # 总结模式：生成角色摘要
-            # if character.get("is_hardcoded", False):
-            #     QMessageBox.information(self, "提示", "系统预设角色不可修改")
-            # else:
-            self.summary_character(character)
+            if character.get("is_hardcoded", False):
+                QMessageBox.information(self, "提示", "系统预设角色不可修改")
+            else:
+                self.summary_character(character)
             self.reset_mode()
 
     def summary_character(self, character):
         """生成角色摘要并保存"""
         # 创建进度对话框 - 必须在主线程中创建
         self.progress = QProgressDialog(
-            f"正在为 {character['name']} 生成摘要...", None, 0, 0, self  # 没有取消按钮
+            f"正在使用 {get_assist()[10:]} 为 {character['name']} 生成摘要...",
+            None,
+            0,
+            0,
+            self,  # 没有取消按钮
         )
         self.progress.setWindowTitle("生成角色摘要")
         self.progress.setWindowModality(Qt.WindowModal)

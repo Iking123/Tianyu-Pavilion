@@ -7,92 +7,26 @@ from PyQt5.QtWidgets import (
     QSpacerItem,
     QSizePolicy,
     QScrollArea,
-    QFrame,
 )
 from PyQt5.QtGui import QIcon, QFont, QPixmap, QColor
 from PyQt5.QtCore import Qt, QSize
-
 from funcs import resource_path
+from ui.card_widget import CardWidget
+from ui.components import GoBackButton
 
 
-class writingCard(QFrame):
-    """横向写作卡片控件"""
+class writingCard(CardWidget):
+    """横向写作卡片控件 - 可点击的长条形按钮"""
 
     def __init__(self, title, description, icon_path, click_handler, parent=None):
-        super().__init__(parent)
-        self.setMinimumHeight(120)
-        self.setStyleSheet(
-            """
-            writingCard {
-                background-color: white;
-                border-radius: 10px;
-                border: 1px solid #E0E0E0;
-                margin: 10px 0;
-            }
-            writingCard:hover {
-                border: 2px solid #4A90E2;
-                background-color: #F5F9FF;
-            }
-        """
-        )
+        super().__init__(title, description, icon_path, parent=parent)
+        self.click_handler = click_handler
 
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(20, 15, 20, 15)
-        layout.setSpacing(20)
-
-        # 写作图标
-        icon_label = QLabel()
-        pixmap = QPixmap(icon_path)
-        if pixmap.isNull():
-            pixmap = QPixmap(80, 80)
-            pixmap.fill(QColor(74, 144, 226))  # 蓝色占位符
-        icon_label.setPixmap(
-            pixmap.scaled(80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        )
-        icon_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(icon_label)
-
-        # 写作信息区域
-        info_layout = QVBoxLayout()
-        info_layout.setContentsMargins(0, 0, 0, 0)
-        info_layout.setSpacing(8)
-
-        # 写作标题
-        title_label = QLabel(title)
-        title_label.setFont(QFont("Arial", 14, QFont.Bold))
-        title_label.setStyleSheet("color: #2C3E50;")
-        info_layout.addWidget(title_label)
-
-        # 写作描述
-        desc_label = QLabel(description)
-        desc_label.setFont(QFont("Arial", 10))
-        desc_label.setStyleSheet("color: #7F8C8D;")
-        desc_label.setWordWrap(True)
-        info_layout.addWidget(desc_label)
-
-        layout.addLayout(info_layout, 1)  # 添加伸缩因子使描述区域可以扩展
-
-        # 写作按钮
-        self.play_button = QPushButton("开始\n写作")
-        self.play_button.setFixedSize(80, 80)
-        self.play_button.setFont(QFont("Arial", 10))
-        self.play_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #4A90E2;
-                color: white;
-                border: none;
-                border-radius: 8px;
-            }
-            QPushButton:hover {
-                background-color: #3A7BC8;
-            }
-        """
-        )
-        self.play_button.clicked.connect(click_handler)
-        layout.addWidget(self.play_button, 0, Qt.AlignRight)
-
-        layout.addStretch(0)
+    def mousePressEvent(self, event):
+        """重写鼠标点击事件，添加自定义处理"""
+        super().mousePressEvent(event)
+        if event.button() == Qt.LeftButton:
+            self.click_handler()
 
 
 class CreativeWritingPage(QWidget):
@@ -114,25 +48,7 @@ class CreativeWritingPage(QWidget):
         toolbar_layout.setContentsMargins(10, 5, 10, 5)
 
         # 返回按钮
-        self.back_button = QPushButton("← 返回主页")
-        self.back_button.setIcon(QIcon.fromTheme("go-previous"))
-        self.back_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #AB63C0;
-                color: white;
-                border: none;
-                padding: 8px 15px;
-                border-radius: 5px;
-                font-size: 8pt;
-                font-family: Microsoft YaHei;
-            }
-            QPushButton:hover {
-                background-color: #6A0DAD;
-            }
-        """
-        )
-        self.back_button.clicked.connect(self.go_back)
+        self.back_button = GoBackButton(self, "返回主页")
 
         # 页面标题
         title_label = QLabel("创意写作")
@@ -140,7 +56,7 @@ class CreativeWritingPage(QWidget):
         title_label.setStyleSheet("color: #2C3E50;")
 
         # 获取返回按钮的宽度作为占位宽度
-        button_width = self.back_button.sizeHint().width()
+        button_width = self.back_button.width()
 
         toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
         toolbar_layout.addSpacerItem(
@@ -182,8 +98,13 @@ class CreativeWritingPage(QWidget):
         # 添加写作卡片
         writings = [
             {
+                "title": "抽象作文",
+                "description": "使用传统方法，纯随机式输出，写就抽象作文。不调用大模型API，故不消耗token；不过会调用一言api来获取名言金句。",
+                "icon": resource_path("resources/icons/abstract.png"),
+            },
+            {
                 "title": "零分作文",
-                "description": "创作零分作文！",
+                "description": "用大语言模型，创作零分作文！",
                 "icon": resource_path("resources/icons/zero.png"),
             },
         ]

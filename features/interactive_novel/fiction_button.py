@@ -19,94 +19,17 @@ from PyQt5.QtGui import QFont, QColor
 from core.character_manager import get_all_characters, get_character_name
 from core.fiction_manager import get_fiction_by_id
 from features.character.character_button import SelectableCharacterButton
+from ui.card_widget import CardWidget
 
 
-class FictionButton(QFrame):
+class FictionButton(CardWidget):
     """小说按钮，显示小说信息"""
 
-    clicked = pyqtSignal()  # 自定义 clicked 信号
-
     def __init__(self, fiction_data, parent=None):
-        super().__init__(parent)
+        title = fiction_data.get("name", "未知小说") or "未知小说"
+        description = fiction_data.get("blurb", "无简介") or "无简介"
+        super().__init__(title, description, min_height=100, parent=parent)
         self.fiction_data = fiction_data
-        self.setMinimumHeight(100)
-        self.setCursor(Qt.PointingHandCursor)
-        self.setStyleSheet(
-            """
-            FictionButton {
-                background-color: white;
-                border-radius: 10px;
-                border: 1px solid #E0E0E0;
-                margin: 10px 0;
-            }
-            FictionButton:hover {
-                border: 2px solid #4A90E2;
-                background-color: #F5F9FF;
-            }
-        """
-        )
-        self.setup_ui()
-
-    def setup_ui(self):
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(20, 15, 20, 15)
-        layout.setSpacing(20)
-
-        # 小说信息区域
-        info_layout = QVBoxLayout()
-        info_layout.setContentsMargins(0, 0, 0, 0)
-        info_layout.setSpacing(8)
-
-        # 小说标题
-        title = self.fiction_data.get("name", "未知小说") or "未知小说"
-        title_label = QLabel(title)
-        title_label.setFont(QFont("Arial", 14, QFont.Bold))
-        title_label.setStyleSheet("color: #2C3E50;")
-        info_layout.addWidget(title_label)
-
-        # 小说简介
-        blurb = self.fiction_data.get("blurb", "无简介") or "无简介"
-        blurb_label = QLabel(blurb)
-        blurb_label.setFont(QFont("Arial", 10))
-        blurb_label.setStyleSheet("color: #7F8C8D;")
-        blurb_label.setWordWrap(True)
-        info_layout.addWidget(blurb_label)
-
-        layout.addLayout(info_layout, 1)  # 添加伸缩因子使描述区域可以扩展
-
-    def mousePressEvent(self, event):
-        """鼠标点击事件"""
-        if event.button() == Qt.LeftButton:
-            self.clicked.emit()  # 触发 clicked 信号
-        super().mousePressEvent(event)
-
-    def enterEvent(self, event):
-        """鼠标进入事件 - 增强悬停效果"""
-        self.setStyleSheet(
-            """
-            FictionButton {
-                background-color: #F5F9FF;
-                border-radius: 10px;
-                border: 2px solid #4A90E2;
-                margin: 10px 0;
-            }
-        """
-        )
-        super().enterEvent(event)
-
-    def leaveEvent(self, event):
-        """鼠标离开事件 - 恢复原始样式"""
-        self.setStyleSheet(
-            """
-            FictionButton {
-                background-color: white;
-                border-radius: 10px;
-                border: 1px solid #E0E0E0;
-                margin: 10px 0;
-            }
-        """
-        )
-        super().leaveEvent(event)
 
 
 class FictionStartDialog(QDialog):

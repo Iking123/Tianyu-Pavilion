@@ -22,6 +22,7 @@ class FictionChatComponent(ChatComponent):
         character_ids=[],
         placeholder="输入消息...",
         threshold=3000,
+        parent=None,
     ):
         super().__init__(
             main_window, ini_msg=False, placeholder=placeholder, threshold=threshold
@@ -32,22 +33,7 @@ class FictionChatComponent(ChatComponent):
         self.parser = FictionParser()  # 创建解析器实例
         self.current_options = []
         self.option_buttons = []
-        # self.option_button_group = QButtonGroup(self)
-        # self.option_button_group.buttonClicked.connect(self.on_option_selected)
-
-        # # 将选项区域直接插入到输入面板上方
-        # self.options_widget = QWidget()
-        # self.options_layout = QHBoxLayout(self.options_widget)
-        # self.options_layout.setContentsMargins(0, 0, 0, 0)  # 上下左右无间距
-        # self.options_layout.setSpacing(10)
-        # self.options_widget.setVisible(False)
-
-        # # 直接插入到输入面板上方（利用父类布局结构）
-        # splitter = self.findChild(QSplitter)  # 获取父类的分割器
-        # splitter.insertWidget(1, self.options_widget)  # 插入到输入面板前
-
-        # # 开局选项
-        # self.show_options(["开局", "开局。", "开局！"])
+        self.page = parent
 
     def add_message_content(self, role, content, is_thinking=False):
         """添加消息内容方法"""
@@ -162,3 +148,5 @@ class FictionChatComponent(ChatComponent):
         super().on_worker_finished()
         if not hasattr(self, "current_options") or len(self.current_options) == 0:
             self.input_panel.setVisible(False)
+            if self.page:
+                self.page.over = True

@@ -3,6 +3,9 @@ APP_STYLESHEET = """
         background-color: #F5F7FA;
         font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
     }
+    QLabel {
+        background-color: none;
+    }
     QScrollArea {
         border: none;
     }
@@ -29,6 +32,12 @@ APP_STYLESHEET = """
     QStatusBar QPushButton[style*="scroll"] {
         background-color: #4A90E2;
         color: white;
+    }
+    
+    QToolTip {
+        background-color: white;
+        color: black;
+        font-size: 10pt;
     }
 """
 

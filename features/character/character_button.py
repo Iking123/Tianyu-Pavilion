@@ -15,128 +15,31 @@ from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt
 import os
 from ui.message_display import MessageDisplayArea
+from ui.card_widget import CardWidget
 from funcs import resource_path
 
 
-class CharacterButton(QFrame):
+class CharacterButton(CardWidget):
     """角色按钮，显示角色信息"""
 
-    clicked = pyqtSignal()  # 自定义 clicked 信号
-
     def __init__(self, character_data, parent=None):
-        super().__init__(parent)
-        self.character_data = character_data
-        self.setMinimumHeight(120)
-        self.setCursor(Qt.PointingHandCursor)  # 设置鼠标指针为手型
-        self.setStyleSheet(
-            """
-            CharacterButton {
-                background-color: white;
-                border-radius: 10px;
-                border: 1px solid #E0E0E0;
-                margin: 10px 0;
-            }
-            CharacterButton:hover {
-                border: 2px solid #4A90E2;
-                background-color: #F5F9FF;
-            }
-        """
-        )
-        self.setup_ui()
+        name = character_data.get("name", "未知角色") or "未知角色"
+        gender = character_data.get("gender", "未知性别") or "未知性别"
+        age = character_data.get("age", "未知年龄") or "未知年龄"
+        identity = character_data.get("identity", "未知身份") or "未知身份"
+        description = f"{gender} - {age} - {identity}"
 
-    def setup_ui(self):
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(20, 15, 20, 15)
-        layout.setSpacing(20)
-
-        # 角色头像
-        icon_label = QLabel()
-        fixed_height = 100  # 固定高度
-
-        # 获取头像路径
+        # 处理头像路径
         avatar_path = None
-        if self.character_data.get("avatar"):
-            # 使用resource_path处理头像路径
-            avatar_path = resource_path(self.character_data["avatar"])
+        if character_data.get("avatar"):
+            avatar_path = resource_path(character_data["avatar"])
         else:
-            # 尝试默认头像
             default_avatar = resource_path("resources/images/default_avatar.png")
             if os.path.exists(default_avatar):
                 avatar_path = default_avatar
 
-        if avatar_path and os.path.exists(avatar_path):
-            pixmap = QPixmap(avatar_path)
-        else:
-            # 如果都不存在，则创建一个空图片
-            pixmap = QPixmap()
-
-        if not pixmap.isNull():
-            # 按高度等比例缩放
-            scaled_pixmap = pixmap.scaledToHeight(
-                fixed_height, Qt.SmoothTransformation  # 使用平滑缩放，提高质量
-            )
-            icon_label.setPixmap(scaled_pixmap)
-            icon_label.setAlignment(Qt.AlignCenter)
-
-        layout.addWidget(icon_label)
-
-        # 角色信息区域
-        info_layout = QVBoxLayout()
-        info_layout.setContentsMargins(0, 0, 0, 0)
-        info_layout.setSpacing(8)
-
-        # 角色标题（名称）
-        name = self.character_data.get("name", "未知角色") or "未知角色"
-        title_label = QLabel(name)
-        title_label.setFont(QFont("Arial", 14, QFont.Bold))
-        title_label.setStyleSheet("color: #2C3E50;")
-        info_layout.addWidget(title_label)
-
-        # 角色描述
-        gender = self.character_data.get("gender", "未知性别") or "未知性别"
-        age = self.character_data.get("age", "未知年龄") or "未知年龄"
-        identity = self.character_data.get("identity", "未知身份") or "未知身份"
-        desc_label = QLabel(f"{gender} - {age} - {identity}")
-        desc_label.setFont(QFont("Arial", 10))
-        desc_label.setStyleSheet("color: #7F8C8D;")
-        desc_label.setWordWrap(True)
-        info_layout.addWidget(desc_label)
-
-        layout.addLayout(info_layout, 1)  # 添加伸缩因子使描述区域可以扩展
-
-    def mousePressEvent(self, event):
-        """鼠标点击事件"""
-        if event.button() == Qt.LeftButton:
-            self.clicked.emit()  # 触发 clicked 信号
-        super().mousePressEvent(event)
-
-    def enterEvent(self, event):
-        """鼠标进入事件 - 增强悬停效果"""
-        self.setStyleSheet(
-            """
-            CharacterButton {
-                background-color: #F5F9FF;
-                border-radius: 10px;
-                border: 2px solid #4A90E2;
-                margin: 10px 0;
-            }
-        """
-        )
-        super().enterEvent(event)
-
-    def leaveEvent(self, event):
-        """鼠标离开事件 - 恢复原始样式"""
-        self.setStyleSheet(
-            """
-            CharacterButton {
-                background-color: white;
-                border-radius: 10px;
-                border: 1px solid #E0E0E0;
-                margin: 10px 0;
-            }
-        """
-        )
-        super().leaveEvent(event)
+        super().__init__(name, description, avatar_path, parent=parent)
+        self.character_data = character_data
 
 
 class SelectableCharacterButton(CharacterButton):
@@ -249,10 +152,15 @@ class CharacterDetailDialog(QDialog):
 
         if avatar_path and os.path.exists(avatar_path):
             pixmap = QPixmap(avatar_path)
-            scaled_pixmap = pixmap.scaled(
-                264, 350, Qt.KeepAspectRatio, Qt.SmoothTransformation
-            )
-            avatar_label.setPixmap(scaled_pixmap)
+            if not pixmap.isNull():  # 检查图片是否有效
+                scaled_pixmap = pixmap.scaled(
+                    264, 350, Qt.KeepAspectRatio, Qt.SmoothTransformation
+                )
+                avatar_label.setPixmap(scaled_pixmap)
+            else:
+                # 图片加载失败时显示默认文本
+                avatar_label.setText("头像加载失败")
+                avatar_label.setStyleSheet("color: #666;")
         else:
             avatar_label.setText("无头像")
             avatar_label.setStyleSheet("color: #666;")

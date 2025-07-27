@@ -6,10 +6,12 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QLabel,
+    QFrame,
 )
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt, QTimer, QEvent
 from .styles import INPUT_STYLE, BUTTON_STYLES
+from ui.components import SendButton
 
 
 class CustomTextEdit(QTextEdit):
@@ -103,56 +105,148 @@ class InputPanel(QWidget):
         super().__init__(parent)
         self.send_callback = send_callback
         self.clear_callback = clear_callback
-        self.show_clear_button = (
-            show_clear_button  # 我们只在聊天页面中显示清除按钮，其他页面不显示
-        )
+        self.show_clear_button = show_clear_button
         self.threshold = threshold
         self.placeholder = placeholder
+        self.button_row = None  # 底部按钮行布局
+
+        # 创建容器样式
+        self.container = QFrame()
+        self.container.setObjectName("inputContainer")
+        self.container.setStyleSheet(self._get_container_style())
+
         self.init_ui()
         if tooltip:
             self.setToolTip(tooltip)
 
     def init_ui(self):
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 15, 0, 0)
+        # 主布局
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 15, 0, 0)
+        main_layout.addWidget(self.container)
+
+        # 容器内部布局
+        container_layout = QVBoxLayout(self.container)
+        container_layout.setContentsMargins(0, 0, 0, 0)
+        container_layout.setSpacing(0)
 
         # 使用自定义的文本编辑框
-        self.input_field = CustomTextEdit(
-            self, self.threshold
-        )  # 传入self作为parent_panel
+        self.input_field = CustomTextEdit(self, self.threshold)
         self.input_field.setPlaceholderText(self.placeholder)
         self.input_field.setMinimumHeight(100)
         input_font = QFont()
         input_font.setPointSize(12)
         self.input_field.setFont(input_font)
-        self.input_field.setStyleSheet(INPUT_STYLE)
-        layout.addWidget(self.input_field)
 
-        # 按钮区域
-        button_layout = QHBoxLayout()
+        # 移除输入框边框（由容器提供）
+        input_style = INPUT_STYLE.replace("border: 1px solid #CCCCCC;", "border: none;")
+        self.input_field.setStyleSheet(input_style)
+        container_layout.addWidget(self.input_field)
 
+        # 不要有分割线！
+        # separator = QFrame()
+        # separator.setFrameShape(QFrame.HLine)
+        # separator.setStyleSheet("background-color: #E0E0E0;")
+        # separator.setFixedHeight(1)
+        # container_layout.addWidget(separator)
+
+        # 创建底部按钮行
+        self.button_row = QWidget()
+        button_row_layout = QHBoxLayout(self.button_row)
+        button_row_layout.setContentsMargins(10, 10, 10, 10)
+        button_row_layout.setSpacing(10)
+
+        # 添加清除按钮（如果有）
         if self.show_clear_button:
             self.clear_button = QPushButton("新对话")
-            self.clear_button.setFixedHeight(60)
+            self.clear_button.setFixedHeight(40)
             button_font = QFont()
-            button_font.setPointSize(12)
+            button_font.setPointSize(11)
             self.clear_button.setFont(button_font)
             self.clear_button.setStyleSheet(BUTTON_STYLES["clear"])
             self.clear_button.clicked.connect(self.on_clear_clicked)
-            button_layout.addWidget(self.clear_button)
+            button_row_layout.addWidget(self.clear_button)
 
-        self.send_button = QPushButton("发送")
-        self.send_button.setFixedHeight(60)
+        # 添加拉伸空间（按钮将居右）
+        button_row_layout.addStretch()
+
+        # 发送按钮
+        # self.send_button = QPushButton("发送")
+        # self.send_button.setFixedHeight(40)
+        # button_font = QFont()
+        # button_font.setPointSize(11)
+        # self.send_button.setFont(button_font)
+        # self.send_button.setStyleSheet(BUTTON_STYLES["send"])
+        # self.send_button.clicked.connect(self.on_send_clicked)
+        self.send_button = SendButton(self)
+        button_row_layout.addWidget(self.send_button)
+
+        container_layout.addWidget(self.button_row)
+
+    def _get_container_style(self):
+        """从输入框样式提取容器样式"""
+        # 提取背景色
+        bg_color = "#FFFFFF"  # 默认白色
+        if "background-color:" in INPUT_STYLE:
+            start = INPUT_STYLE.find("background-color:") + len("background-color:")
+            end = INPUT_STYLE.find(";", start)
+            if end != -1:
+                bg_color = INPUT_STYLE[start:end].strip()
+
+        # 提取圆角
+        radius = "8px"  # 默认圆角
+        if "border-radius:" in INPUT_STYLE:
+            start = INPUT_STYLE.find("border-radius:") + len("border-radius:")
+            end = INPUT_STYLE.find(";", start)
+            if end != -1:
+                radius = INPUT_STYLE[start:end].strip()
+
+        # 提取边框
+        border = "1px solid #CCCCCC"  # 默认边框
+        if "border:" in INPUT_STYLE:
+            start = INPUT_STYLE.find("border:") + len("border:")
+            end = INPUT_STYLE.find(";", start)
+            if end != -1:
+                border = INPUT_STYLE[start:end].strip()
+
+        # 创建容器样式
+        return f"""
+            QFrame#inputContainer {{
+                background-color: {bg_color};
+                border: {border};
+                border-radius: {radius};
+            }}
+        """
+
+    def add_button(self, text, callback, style="option"):
+        """向按钮行添加自定义按钮"""
+        if not self.button_row:
+            return
+
+        button = QPushButton(text)
+        button.setFixedHeight(40)
         button_font = QFont()
-        button_font.setPointSize(12)
-        self.send_button.setFont(button_font)
-        self.send_button.setStyleSheet(BUTTON_STYLES["send"])
-        self.send_button.clicked.connect(self.on_send_clicked)
+        button_font.setPointSize(11)
+        button.setFont(button_font)
 
-        button_layout.addStretch()
-        button_layout.addWidget(self.send_button)
+        # 应用样式
+        if style in BUTTON_STYLES:
+            button.setStyleSheet(BUTTON_STYLES[style])
+        else:
+            button.setStyleSheet(BUTTON_STYLES["option"])
 
-        layout.addLayout(button_layout)
+        button.clicked.connect(callback)
+
+        # 在清除按钮后添加新按钮
+        layout = self.button_row.layout()
+        if self.show_clear_button and layout.indexOf(self.clear_button) >= 0:
+            # 在清除按钮后添加
+            layout.insertWidget(layout.indexOf(self.clear_button) + 1, button)
+        else:
+            # 在清除按钮位置添加（如果没有清除按钮）
+            layout.insertWidget(0, button)
+
+        return button
 
     def on_send_clicked(self):
         """处理发送按钮点击事件"""
@@ -178,6 +272,7 @@ class InputPanel(QWidget):
         """清空输入框并设置焦点"""
         self.input_field.clear()
         self.input_field.setFocus()  # 自动聚焦
+        self.send_button.setEnabled(True)  # 重新启用发送按钮
 
     def set_send_enabled(self, enabled):
         """设置发送按钮状态"""

@@ -1,5 +1,12 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QTextBrowser, QSizePolicy
-from PyQt5.QtGui import QFont, QTextCursor, QDesktopServices, QTextCharFormat, QColor
+from PyQt5.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QTextBrowser,
+    QSizePolicy,
+    QHBoxLayout,
+)
+from PyQt5.QtGui import QFont, QPixmap, QDesktopServices
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QEvent
 from PyQt5.QtNetwork import QNetworkReply
 import time
@@ -89,11 +96,13 @@ class MessageWidget(QWidget):
                 avatar_path = resource_path(avatar_path)
                 if os.path.exists(avatar_path):
                     pixmap = QPixmap(avatar_path)
-                    # 缩放头像
-                    pixmap = pixmap.scaled(
-                        60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation
-                    )
-                    avatar_label.setPixmap(pixmap)
+                    if not pixmap.isNull():  # 图片有效则作为头像
+                        # 缩放头像
+                        pixmap = pixmap.scaled(
+                            60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation
+                        )
+                        avatar_label.setPixmap(pixmap)
+                    # 无论是否有图，都添加一个标签（无图则稍微占一下位）
                     avatar_layout.addWidget(avatar_label)
 
             # 角色标签

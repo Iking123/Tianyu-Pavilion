@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QIcon, QFont, QColor, QRegExpValidator
 from PyQt5.QtCore import Qt, QRegExp
+from ui.components import GoBackButton
 from ui.message_display import MessageDisplayArea
 from ui.input_panel import InputPanel
 from core.config_manager import get_assist
@@ -41,25 +42,7 @@ class IdiomSolitairePage(QWidget):
         toolbar_layout.setContentsMargins(10, 5, 10, 5)
 
         # 返回按钮
-        self.back_button = QPushButton("← 返回游戏列表")
-        self.back_button.setIcon(QIcon.fromTheme("go-previous"))
-        self.back_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #34A853;
-                color: white;
-                border: none;
-                padding: 8px 15px;
-                border-radius: 5px;
-                font-size: 8pt;
-                font-family: Microsoft YaHei;
-            }
-            QPushButton:hover {
-                background-color: #2E944B;
-            }
-        """
-        )
-        self.back_button.clicked.connect(self.go_back)
+        self.back_button = GoBackButton(self, "返回游戏列表")
 
         # 页面标题
         title_label = QLabel("成语接龙")

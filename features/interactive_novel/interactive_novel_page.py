@@ -28,6 +28,7 @@ from core.fiction_manager import (
     delete_fiction,
     get_fiction_by_id,
 )
+from ui.components import GoBackButton
 from ui.styles import BUTTON_STYLES
 from .fiction_button import FictionButton, FictionStartDialog
 from ui.input_panel import CustomTextEdit
@@ -156,25 +157,7 @@ class InteractiveNovelPage(QWidget):
         toolbar_layout.setContentsMargins(10, 5, 10, 5)
 
         # 返回按钮
-        self.back_button = QPushButton("← 返回主页")
-        self.back_button.setIcon(QIcon.fromTheme("go-previous"))
-        self.back_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #4285F4;
-                color: white;
-                border: none;
-                padding: 8px 15px;
-                border-radius: 5px;
-                font-size: 8pt;
-                font-family: Microsoft YaHei;
-            }
-            QPushButton:hover {
-                background-color: #3367D6;
-            }
-        """
-        )
-        self.back_button.clicked.connect(self.go_back)
+        self.back_button = GoBackButton(self, "返回主页")
         toolbar_layout.addWidget(self.back_button)
 
         # 标题
@@ -183,7 +166,7 @@ class InteractiveNovelPage(QWidget):
         title_label.setStyleSheet("color: #2C3E50;")
 
         # 居中布局
-        button_width = self.back_button.sizeHint().width()
+        button_width = self.back_button.width()
         toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
         toolbar_layout.addSpacerItem(
             QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)

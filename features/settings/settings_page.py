@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QIcon, QFont, QDoubleValidator, QIntValidator
 from PyQt5.QtCore import Qt, QTimer
 from core.config_manager import *
+from ui.components import GoBackButton
 
 
 class SettingsPage(QWidget):
@@ -42,25 +43,7 @@ class SettingsPage(QWidget):
         toolbar_layout.setContentsMargins(10, 5, 10, 5)
 
         # 返回按钮
-        self.back_button = QPushButton("← 返回主页")
-        self.back_button.setIcon(QIcon.fromTheme("go-previous"))
-        self.back_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #EA4335;
-                color: white;
-                border: none;
-                padding: 8px 15px;
-                border-radius: 5px;
-                font-size: 8pt;
-                font-family: Microsoft YaHei;
-            }
-            QPushButton:hover {
-                background-color: #D32F2F;
-            }
-        """
-        )
-        self.back_button.clicked.connect(self.go_back)
+        self.back_button = GoBackButton(self, "返回主页")
 
         # 页面标题
         title_label = QLabel("设置")

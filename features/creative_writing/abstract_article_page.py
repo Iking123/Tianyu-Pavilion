@@ -3,19 +3,18 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QPushButton,
-    QSizePolicy,
     QLabel,
     QSpacerItem,
+    QSizePolicy,
 )
 from PyQt5.QtGui import QIcon, QFont
-
-from ui.components import GoBackButton
-from .chat_component import ChatComponent
 from PyQt5.QtCore import Qt
+from features.chat.chat_component import ChatComponent
+from ui.components import GoBackButton
 
 
-class ChatPage(QWidget):
-    """聊天功能页面，包含聊天组件和返回按钮"""
+class AbstractArticlePage(QWidget):
+    """抽象作文页面"""
 
     def __init__(self, main_window=None):
         super().__init__()
@@ -33,21 +32,13 @@ class ChatPage(QWidget):
         toolbar_layout.setContentsMargins(10, 5, 10, 5)
 
         # 返回按钮
-        self.back_button = GoBackButton(self, "返回主页")
+        self.back_button = GoBackButton(self, "返回写作列表")
 
         # 页面标题
-        title_label = QLabel("天语阁聊天器")
+        title_label = QLabel("零分作文生成器")
         title_label.setFont(QFont("Arial", 22, QFont.Bold))
         title_label.setStyleSheet("color: #2C3E50;")
 
-        # 布局结构：
-        # 1. 添加返回按钮（左对齐）
-        # 2. 添加水平伸缩，使标题能真正居中
-        # 3. 添加标题（居中）
-        # 4. 再添加一个与返回按钮等宽的空项目，平衡布局
-        # 5. 添加水平伸缩，使右侧空间对称
-
-        # 获取返回按钮的宽度作为占位宽度
         button_width = self.back_button.width()
 
         toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
@@ -65,31 +56,10 @@ class ChatPage(QWidget):
         layout.addWidget(toolbar)
 
         # 创建聊天组件
-        self.chat_component = ChatComponent(self.main_window)
+        self.chat_component = ChatComponent(self.main_window, False, "输入作文标题", 10)
         layout.addWidget(self.chat_component)
+        ipp = self.chat_component.input_panel
+        ipp.send_callback = self.send_message
 
         # 设置布局策略
         self.chat_component.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-        # # 连接滚动按钮
-        # if self.main_window:
-        #     scroll_button = self.main_window.get_scroll_button()
-        #     scroll_button.clicked.connect(self.chat_component.scroll_to_bottom)
-
-    def go_back(self):
-        """返回主页"""
-        if self.main_window:
-            self.main_window.switch_page(0)
-
-    def cleanup(self):
-        """清理资源"""
-        if hasattr(self, "chat_component") and self.chat_component:
-            self.chat_component.cleanup()
-
-    def showEvent(self, event):
-        """页面显示时自动设置焦点到聊天组件"""
-        super().showEvent(event)
-        self.chat_component.setFocus()
-        self.main_window.set_status(
-            "处理中..." if self.chat_component.worker_active else "就绪"
-        )

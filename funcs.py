@@ -1,18 +1,5 @@
-import re
-from PyQt5.QtCore import QObject, pyqtSlot, QTimer, QDateTime
-from PyQt5.QtWidgets import (
-    QScrollBar,
-    QScrollArea,
-    QPushButton,
-    QLabel,
-    QHBoxLayout,
-    QVBoxLayout,
-    QWidget,
-    QSizePolicy,
-)
-from PyQt5.QtGui import QPixmap, QIcon, QPainter, QFont, QColor
-from PyQt5.QtCore import Qt, QSize
-from PyQt5 import QtWidgets
+import inspect
+from PyQt5.QtCore import pyqtSlot, QTimer
 import sys
 import os
 
@@ -113,3 +100,14 @@ def check_suffix_condition(s: str, target: str) -> bool:
         if target.startswith(suffix_head):
             return False
     return True
+
+
+def print_method_source(method):
+    """输出一个类方法（调试用）"""
+    if inspect.ismethod(method):
+        try:
+            print(inspect.getsource(method.__func__))
+        except TypeError:
+            print("源代码不可访问（可能是内置方法）")
+    else:
+        print("输入的不是类方法")

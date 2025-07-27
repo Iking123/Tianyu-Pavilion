@@ -2,13 +2,14 @@ from PyQt5.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
-    QPushButton,
+    QMessageBox,
     QSizePolicy,
     QLabel,
     QSpacerItem,
 )
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtCore import Qt
+from ui.components import GoBackButton
 from .fiction_chat_component import FictionChatComponent
 from core.config_manager import get_assist
 from core.fiction_manager import get_fiction_by_id, format_fiction
@@ -24,6 +25,7 @@ class InteractiveFictionPage(QWidget):
         self.fiction_id = fiction_id
         self.character_ids = character_ids or []
         self.fiction_data = {}
+        self.over = False
 
         # 获取小说信息
         if self.fiction_id:
@@ -40,26 +42,17 @@ class InteractiveFictionPage(QWidget):
         toolbar_layout = QHBoxLayout(toolbar)
         toolbar_layout.setContentsMargins(10, 5, 10, 5)
 
-        # 返回按钮 - 改为"中止并返回"
-        self.back_button = QPushButton("中止并返回")
-        self.back_button.setIcon(QIcon.fromTheme("go-previous"))
-        self.back_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #E74C3C;
-                color: white;
-                border: none;
-                padding: 8px 15px;
-                border-radius: 5px;
-                font-size: 8pt;
-                font-family: Microsoft YaHei;
-            }
-            QPushButton:hover {
-                background-color: #C0392B;
-            }
-        """
+        # 返回按钮 - "中止并返回"
+        self.back_button = GoBackButton(
+            self, "返回小说列表（请注意，会中止本次小说！）"
         )
-        self.back_button.clicked.connect(self.cancel_and_go_back)  # 修改连接的方法
+        self.back_button.setStyleSheet(
+            """QToolTip {
+                background-color: white;
+                color: black;
+                font-size: 10pt;
+            }"""
+        )
 
         # 页面标题 - 使用小说名称
         fiction_name = (
@@ -72,7 +65,7 @@ class InteractiveFictionPage(QWidget):
         title_label.setStyleSheet("color: white;")
 
         # 居中布局
-        button_width = self.back_button.sizeHint().width()
+        button_width = self.back_button.width()
         toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
         toolbar_layout.addSpacerItem(
             QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
@@ -88,7 +81,10 @@ class InteractiveFictionPage(QWidget):
 
         # 创建小说聊天组件
         self.fiction_chat = FictionChatComponent(
-            self.main_window, self.character_ids, placeholder="输入行动或选择选项..."
+            self.main_window,
+            self.character_ids,
+            placeholder="输入行动或选择选项...",
+            parent=self,
         )
         layout.addWidget(self.fiction_chat)
 
@@ -102,8 +98,19 @@ class InteractiveFictionPage(QWidget):
             False,
         )
 
-    def cancel_and_go_back(self):
+    def go_back(self):
         """中止小说并返回到交互小说编辑器页面"""
+        if not self.over:
+            reply = QMessageBox.question(
+                self,
+                "确认返回",
+                "是否要返回小说列表？（本次小说将会中止！）",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if reply != QMessageBox.Yes:
+                return  # 用户取消
+
         # 清理资源
         self.cleanup()
 
