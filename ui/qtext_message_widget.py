@@ -1,15 +1,18 @@
+import html
 from PyQt5.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QLabel,
-    QTextBrowser,
+    QApplication,
     QSizePolicy,
     QHBoxLayout,
 )
-from PyQt5.QtGui import QFont, QPixmap, QDesktopServices
+from PyQt5.QtGui import QFont, QTextCursor, QDesktopServices
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QEvent
 from PyQt5.QtNetwork import QNetworkReply
 import time
+
+from ui.components import CustomTextBrowser
 from . import qtext_markdown_utils  # 导入Markdown工具
 from .styles import *  # 导入样式
 from core.config_manager import get_config
@@ -25,7 +28,7 @@ class MessageWidget(QWidget):
 
     option_clicked = pyqtSignal(str)  # 定义点击信号，传递选项内容
 
-    def __init__(self, parent, role, content, is_thinking=False, auto_scroll=True):
+    def __init__(self, parent, role, content="", is_thinking=False, auto_scroll=True):
         super().__init__(parent)
         self._adjusting = False
         self.message_display = parent
@@ -38,8 +41,8 @@ class MessageWidget(QWidget):
         layout.setContentsMargins(5, 0, 5, 0)
         layout.setAlignment(Qt.AlignTop)  # 顶部对齐
 
-        # 使用 QTextBrowser 替代 QTextEdit - 提供更好的 HTML 支持
-        self.content_browser = QTextBrowser()
+        # 使用自定义 CustomTextBrowser
+        self.content_browser = CustomTextBrowser()
         self.content_browser.setOpenExternalLinks(True)  # 允许打开外部链接
         self.content_browser.setOpenLinks(False)  # 禁止打开内部链接
         self.content_browser.anchorClicked.connect(self.handle_link_click)
@@ -61,79 +64,86 @@ class MessageWidget(QWidget):
         # 为选项消息添加点击事件支持
         if role == "option":
             # 设置鼠标悬停样式
-            self.setCursor(Qt.PointingHandCursor)
+            self.content_browser.tp = Qt.PointingHandCursor
             self.content_browser.setCursor(Qt.PointingHandCursor)
             self.content_browser.viewport().setCursor(Qt.PointingHandCursor)
-            # 安装事件过滤器以捕获点击
-            self.content_browser.viewport().installEventFilter(self)
-        # 如果不是选项，也不是旁白（即role不为空），则考虑角色标签与头像：
-        elif role:
-            # 创建头像容器
-            avatar_widget = QWidget()
-            avatar_layout = QHBoxLayout(avatar_widget)
-            avatar_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-            avatar_layout.setContentsMargins(0, 0, 10, 0)  # 右边距10px
+        else:
+            # 如果不是选项，也不是旁白（即role不为空），则考虑角色标签与头像：
+            if role:
+                # 创建头像容器
+                avatar_widget = QWidget()
+                avatar_layout = QHBoxLayout(avatar_widget)
+                avatar_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+                avatar_layout.setContentsMargins(0, 0, 10, 0)  # 右边距10px
 
-            # 尝试获取角色头像
-            character = None
-            if role.startswith("character_"):
-                character_id = role[10:]
-                character = get_character_by_id(character_id)
+                # 尝试获取角色头像
+                character = None
+                if role.startswith("character_"):
+                    character_id = role[10:]
+                    character = get_character_by_id(character_id)
 
-            # 如果有角色头像，或者是助手
-            if character and character.get("avatar") or role.startswith("assistant_"):
-                avatar_label = QLabel()
-                if role.startswith("assistant_DeepSeek"):
-                    avatar_path = "resources/images/deepseek.png"
-                elif role.startswith("assistant_豆包"):
-                    avatar_path = "resources/images/doubao.png"
-                elif role.startswith("assistant"):
-                    avatar_path = ""
+                # 如果有角色头像，或者是助手
+                if (
+                    character
+                    and character.get("avatar")
+                    or role.startswith("assistant_")
+                ):
+                    avatar_label = QLabel()
+                    if role.startswith("assistant_DeepSeek"):
+                        avatar_path = "resources/images/deepseek.png"
+                    elif role.startswith("assistant_豆包"):
+                        avatar_path = "resources/images/doubao.png"
+                    elif role.startswith("assistant"):
+                        avatar_path = ""
+                    else:
+                        avatar_path = character["avatar"]
+
+                    # 加载头像
+                    avatar_path = resource_path(avatar_path)
+                    if os.path.exists(avatar_path):
+                        # 创建圆形头像
+                        icon = create_circular_icon(avatar_path)
+                        if icon and not icon.isNull():
+                            # 缩放头像
+                            pixmap = icon.pixmap(64, 64)
+                            avatar_label.setPixmap(pixmap)
+                        # 无论是否有图，都添加一个标签（无图则稍微占一下位）
+                        avatar_layout.addWidget(avatar_label)
+
+                # 角色标签
+                role_name = ""
+                if role.startswith("assistant_"):
+                    role_name = role[10:]
+                    role = "assistant"
+                elif role.startswith("character_"):
+                    role_name = (
+                        character.get("name", role[10:]) if character else role[10:]
+                    )
+                    role = "assistant"  # 将character视为assistant类型
+                elif role.startswith("text_"):
+                    role_name = role[5:]
+                    role = "text"
                 else:
-                    avatar_path = character["avatar"]
+                    match role:
+                        case "user":
+                            role_name = "你"
+                        case "system":
+                            role_name = "系统"
+                if is_thinking:
+                    role_name += "（思考）"
 
-                # 加载头像
-                avatar_path = resource_path(avatar_path)
-                if os.path.exists(avatar_path):
-                    pixmap = QPixmap(avatar_path)
-                    if not pixmap.isNull():  # 图片有效则作为头像
-                        # 缩放头像
-                        pixmap = pixmap.scaled(
-                            60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation
-                        )
-                        avatar_label.setPixmap(pixmap)
-                    # 无论是否有图，都添加一个标签（无图则稍微占一下位）
-                    avatar_layout.addWidget(avatar_label)
+                role_label = QLabel(role_name)
+                role_font = QFont()
+                role_font.setBold(True)
+                role_font.setPointSize(12)
+                role_label.setFont(role_font)
+                role_label.setStyleSheet(MESSAGE_STYLES[role])
 
-            # 角色标签
-            role_name = ""
-            if role.startswith("assistant_"):
-                role_name = role[10:]
-                role = "assistant"
-            elif role.startswith("character_"):
-                role_name = character.get("name", role[10:]) if character else role[10:]
-                role = "assistant"  # 将character视为assistant类型
-            else:
-                match role:
-                    case "user":
-                        role_name = "你"
-                    case "system":
-                        role_name = "系统"
-            if is_thinking:
-                role_name += "（思考）"
+                # 将角色名称添加到头像容器
+                avatar_layout.addWidget(role_label)
 
-            role_label = QLabel(role_name)
-            role_font = QFont()
-            role_font.setBold(True)
-            role_font.setPointSize(12)
-            role_label.setFont(role_font)
-            role_label.setStyleSheet(MESSAGE_STYLES[role])
-
-            # 将角色名称添加到头像容器
-            avatar_layout.addWidget(role_label)
-
-            # 将头像容器添加到主布局
-            layout.addWidget(avatar_widget)
+                # 将头像容器添加到主布局
+                layout.addWidget(avatar_widget)
 
         # 连接高度调整信号
         self.content_browser.document().documentLayout().documentSizeChanged.connect(
@@ -147,7 +157,6 @@ class MessageWidget(QWidget):
         self.highlighter = SearchHighlighter(self.content_browser.document())
 
         # 存储内容
-        self.raw_content = content
         self.role = role
         self.last_render_time = 0
         self.search_term = ""
@@ -166,22 +175,56 @@ class MessageWidget(QWidget):
         # 外部链接开启
         self.content_browser.setOpenExternalLinks(True)
         self.content_browser.setOpenLinks(True)
+        self.content_browser.viewport().installEventFilter(self)  # 添加事件过滤器
+
+    def wheelEvent(self, event):
+        self.message_display.wheelEvent(event)
+        super().wheelEvent(event)
 
     def eventFilter(self, obj, event):
-        """为了选项消息的事件过滤器方法"""
+        """处理复制按钮和选项消息点击"""
         if (
-            hasattr(self, "role")
-            and self.role == "option"
-            and obj is self.content_browser.viewport()
+            event.type() == QEvent.MouseButtonRelease
+            and event.button() == Qt.LeftButton
         ):
+            if obj is self.content_browser.viewport():
+                pos = event.pos()
+                # 检查点击位置是否在复制按钮上
+                anchor = self.content_browser.anchorAt(pos)
+                if anchor.startswith("copycode:"):
+                    _, code = anchor.split(":", 1)
+                    code = html.unescape(code)  # 解码 HTML 实体
+                    QApplication.clipboard().setText(code)
+
+                    # 找到按钮元素并更新文本
+                    cursor = self.content_browser.cursorForPosition(pos)
+                    cursor.select(QTextCursor.BlockUnderCursor)
+                    block_text = cursor.selectedText()
+
+                    if "复制" in block_text:
+                        new_html = self.content_browser.toHtml().replace(
+                            ">复制<", ">已复制!<", 1
+                        )
+                        self.content_browser.setHtml(new_html)
+                        QTimer.singleShot(2000, self.reset_copy_button)
+                    return True
+
             if (
-                event.type() == QEvent.MouseButtonRelease
-                and event.button() == Qt.LeftButton
+                hasattr(self, "role")
+                and self.role == "option"
+                and obj is self.content_browser.viewport()
             ):
                 # 触发选项点击信号
                 self.option_clicked.emit(self.raw_content)
                 return True
         return super().eventFilter(obj, event)
+
+    def reset_copy_button(self):
+        """重置复制按钮文本"""
+        html_content = self.content_browser.toHtml()
+        if "已复制!" in html_content:
+            new_html = html_content.replace(">已复制!<", ">复制<", 1)
+            self.content_browser.setHtml(new_html)
 
     def on_request_finished(self, reply):
         url = reply.url().toString()
@@ -209,14 +252,17 @@ class MessageWidget(QWidget):
         else:
             self.content_browser.setPlainText(self.raw_content)
 
-    def append_content(self, new_content):
+    def append_content(self, new_content, direct_render=False):
         """追加新内容并重新渲染"""
         self.raw_content += new_content
+        if direct_render:
+            self.render_content()
+            return
+
         # 先加一下，以免用户嫌卡顿，但不一定现在渲染
         cursor = self.content_browser.textCursor()
         cursor.movePosition(cursor.End)
         html_content = qtext_markdown_utils.markdown_to_html(new_content).strip()
-        # print(repr(html_content))
         cursor.insertHtml(html_content)  # 直接将new_content转换后插入HTML片段
         self.content_browser.setTextCursor(cursor)
 
@@ -242,12 +288,8 @@ class MessageWidget(QWidget):
         # 确定样式键
         if role == "assistant":
             style_key = "assistant_thinking" if is_thinking else "assistant_regular"
-        elif role == "user":
-            style_key = "user"
-        elif role == "system":
-            style_key = "system"
-        elif role == "option":  # 新增选项样式
-            style_key = "option"
+        elif role in ["user", "system", "option", "text"]:
+            style_key = role
         else:
             style_key = "default"
 
@@ -269,6 +311,7 @@ class MessageWidget(QWidget):
 
     def set_content(self, content):
         """单纯的设置内容"""
+        self.raw_content = content
         self.content_browser.setPlainText(content)
 
     def request_height_adjustment(self):
@@ -323,9 +366,10 @@ class MessageWidget(QWidget):
                 self.content_browser.setFixedHeight(new_height)
                 self.request_delayed_update()
 
-            if at_bottom:
-                # 稍长延迟确保高度更新完成
-                QTimer.singleShot(100, self.message_display.scroll_to_bottom)
+            if at_bottom and not self.message_display.slider_upwards:
+                # 很快先滚一次，稍长延迟后再滚一次，确保高度更新完成
+                QTimer.singleShot(50, self.message_display.scroll_to_bottom)
+                QTimer.singleShot(150, self.message_display.scroll_to_bottom)
 
         except (RuntimeError, AttributeError) as e:
             print(f"Height adjustment error: {e}")

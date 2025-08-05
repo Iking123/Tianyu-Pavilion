@@ -1,11 +1,12 @@
 import re
-from funcs import check_suffix_condition
+from funcs import check_suffix_condition, split_reserve_sep
 
 
 class FictionParser:
     """智能解析交互小说格式的文本（支持流式处理）"""
 
-    def __init__(self):
+    def __init__(self, main_window=None):
+        self.main_window = main_window
         self.buffer = ""
         self.state = "normal"  # normal, option_block
         self.current_options = []
@@ -19,19 +20,24 @@ class FictionParser:
         # 状态机处理缓冲区内容
         while self.buffer:
             if self.state == "normal":
-                # 检查是否进入选项块
-                if "<|OPTIONS|>" in self.buffer:
+                # 检查是否在选项块
+                if self.buffer.startswith("<OPTIONS>"):
+                    before, self.buffer = self.buffer.split("<OPTIONS>", 1)
+                    # 进入选项块状态
+                    self.state = "option_block"
+                    self.current_options = []
+                    if self.main_window:
+                        self.main_window.set_status("🔲 正在构建选项...")
+                    continue
+
+                # 检查选项块是否出现
+                if "<OPTIONS>" in self.buffer:
                     # 分割选项块之前的内容
-                    before, self.buffer = self.buffer.split("<|OPTIONS|>", 1)
+                    before, self.buffer = split_reserve_sep(self.buffer, "<OPTIONS>")
 
                     # 处理选项块之前的内容
                     if before:
                         messages.extend(self._parse_normal_content(before))
-
-                    # 进入选项块状态
-                    self.state = "option_block"
-                    self.current_options = []
-                    continue
 
                 # 检查是否有段落结束
                 if "\n" in self.buffer:
@@ -40,11 +46,11 @@ class FictionParser:
                     self.in_para = False
                     continue
 
-                # 若当前内容的任意后缀均不为<|OPTIONS|>的前缀，说明当前所有内容均不在选项块；
+                # 若当前内容的任意后缀均不为<OPTIONS>的前缀，说明当前所有内容均不在选项块；
                 # 若self.in_para=False，说明当前内容为一段的开头；若为True，则不为一段开头；
                 # 若是一段开头，且开头没有@，说明当前内容不是角色对话；
                 # 若是一段开头，且开头有@，且已出现了|，说明角色名称已被输出，可以解析
-                if check_suffix_condition(self.buffer, "<|OPTIONS|>") and (
+                if check_suffix_condition(self.buffer, "<OPTIONS>") and (
                     self.in_para == True
                     or not self.buffer.startswith("@")
                     or "|" in self.buffer
@@ -57,23 +63,8 @@ class FictionParser:
                 break
 
             elif self.state == "option_block":
-                # 检查是否结束选项块
-                if "<|END_OPTIONS|>" in self.buffer:
-                    option_block, self.buffer = self.buffer.split("<|END_OPTIONS|>", 1)
-
-                    # 处理选项块内容
-                    self._parse_option_block(option_block)
-                    messages.append(
-                        {"type": "options", "options": self.current_options}
-                    )
-
-                    # 返回正常状态
-                    self.state = "normal"
-                    self.current_options = []
-                    continue
-                else:
-                    # 等待完整的结束标记
-                    break
+                # 在选项块状态下，为简便起见，我们整体储存所有内容；当接收完这整个选项内容后，再来一起解析
+                break
 
         return messages
 

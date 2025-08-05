@@ -209,20 +209,6 @@ ASSIST_STYLE = """
         background-color: #ddd;
     }
     
-    /* 代码高亮样式 */
-    .highlight {
-        background-color: #f5f7fa;
-        border-radius: 4px;
-        padding: 10px;
-        margin: 10px 0;
-        overflow-x: auto;
-    }
-    .highlight pre {
-        padding: 0;
-        margin: 0;
-        background: none;
-    }
-    
     /* 数学公式样式 */
     img[src*=".svg"] {
         max-width: 100%;
@@ -276,7 +262,6 @@ ASSIST_STYLE = """
         font-size: 1.1em;
     }
     """
-
 THINKING_STYLE = """
     body {
         font-family: 'Segoe UI', Arial, sans-serif;
@@ -328,7 +313,6 @@ THINKING_STYLE = """
     }
     
     /* Thinking 模式下的 SVG 数学公式样式 */
-    /* 数学公式样式 */
     img[src*=".svg"] {
         max-width: 100%;
         height: auto;
@@ -383,6 +367,7 @@ MESSAGE_STYLES = {
     "user": """color: #888;""",
     "system": """color: #4A90E2;""",
     "option": """color: black;""",
+    "text": """color: black;""",
 }
 
 BUTTON_STYLES = {
@@ -527,5 +512,12 @@ MESSAGE_BASE_STYLES = {
             color: #666;
             font-size: 11pt;
         }
+    """,
+    "text": """
+        color: black;
+        background-color: white;
+        border: 1px solid black;
+        border-radius: 4px;
+        padding: 10px;
     """,
 }

@@ -4,7 +4,7 @@ __pycache__/
 
 # 忽略配置文件（保留模板）与硬编码文件
 config.*
-hardcode.py
+hardcode_*
 
 # 忽略系统/IDE 文件
 .DS_Store
@@ -13,6 +13,7 @@ hardcode.py
 
 # 忽略一些测试文件和缓存文件
 test_*
+tb.py
 formula_cache/
 
 # 忽略构建时的文件

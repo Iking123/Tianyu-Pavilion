@@ -300,8 +300,12 @@ def markdown_to_html(content):
     # 使用BeautifulSoup处理HTML更安全可靠
     soup = BeautifulSoup(html, "html.parser")
 
-    # 增强表格样式（只针对真正的表格）
+    # 增强表格样式（只针对真正的“数据”表格）
     for table in soup.find_all("table"):
+        # <--- 修改: 增加判断，跳过我们的代码块表格，避免样式污染
+        if "code-block-container" in table.get("class", []):
+            continue
+
         table["style"] = "border:1px solid #ccc; border-collapse:collapse;"
 
         for th in table.find_all("th"):
@@ -315,9 +319,93 @@ def markdown_to_html(content):
     # 转换为字符串
     html = str(soup)
 
-    # 添加CSS样式
+    # <--- 修改: 更新style标签内的CSS以匹配新的table结构
+    # 添加强化的CSS样式和JavaScript复制功能
     return f"""
     <style>
+        /* 基础样式 */
+        body {{
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            font-size: 11pt;
+            color: #333;
+            line-height: 1.2;
+            margin: 0;
+            padding: 0;
+        }}
+        
+        /* 代码块容器 - 使用 table 选择器 */
+        table.code-block-container {{
+            border-collapse: collapse !important;
+            border-spacing: 0 !important;
+            width: 100% !important;
+            margin: 15px 0 !important;
+            overflow: hidden !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+            background: #2d3748 !important;
+        }}
+        
+        /* 代码块头部 - 使用 td 选择器，并增加padding来确保高度 */
+        td.code-block-header {{
+            background: #313641 !important;
+            padding: 12px 15px !important; /* 控制头部高度 */
+            border-bottom: 1px solid #485a70 !important;
+        }}
+        
+        .code-language {{
+            color: #e2e8f0 !important;
+            font-size: 11pt !important;
+            font-weight: 500 !important;
+            text-transform: capitalize !important;
+        }}
+        
+        .copy-button {{
+            background: #485a70 !important;
+            color: #e2e8f0 !important;
+            border: none !important;
+            padding: 5px 12px !important;
+            font-size: 11pt !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+            text-decoration: none !important;
+        }}
+        
+        .copy-button:hover {{
+            background: #a0aec0 !important;
+            color: white !important;
+        }}
+        
+        /* 代码内容区域 - 使用 td 选择器 */
+        td.code-block-content {{
+            background: #22272e !important;
+            margin: 0 !important;
+            padding: 10px !important;
+            overflow: hidden !important;
+        }}
+        
+        /* 代码内容区域的 pre 标签 */
+        td.code-block-content pre {{
+            background: #22272e !important;
+            color: #d4d4d4 !important;
+            margin: 0 !important;
+            padding: 15px !important;
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+            font-size: 11pt !important;
+            line-height: 1.5 !important;
+            border: none !important;
+        }}
+        
+        /* 覆盖 Pygments 生成的 pre 样式，因为我们已将其提取出来 */
+        .highlight pre {{
+             padding: 0 !important;
+             margin: 0 !important;
+             background: transparent !important; /* 背景由td控制 */
+             border: none !important;
+        }}
+        
+        /* 列表样式 */
         .markdown-list {{
             margin-top: 4px;
             margin-bottom: 4px;
@@ -336,6 +424,8 @@ def markdown_to_html(content):
             margin-bottom: 4px;
             padding-left: 20px;
         }}
+        
+        /* 数学公式样式 */
         .math-formula {{
             max-width: 100%;
             overflow: auto;
@@ -346,7 +436,102 @@ def markdown_to_html(content):
             height: auto;
             background-color: transparent;
         }}
+        
+        /* 数学公式容器样式 */
+        .math-container {{
+            text-align: center;
+            margin: 10px 0;
+        }}
+        
+        /* 数学公式错误回退样式 */
+        .math-fallback {{
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            color: #333;
+        }}
+        
+        .math-fallback.inline {{
+            display: inline;
+            background-color: #f8f9fa;
+            padding: 2px 5px;
+            border-radius: 3px;
+            border: 1px solid #e0e0e0;
+            font-size: 0.95em;
+        }}
+        
+        .math-fallback.block {{
+            display: block;
+            text-align: center;
+            background-color: #f8f9fa;
+            padding: 10px;
+            margin: 15px 0;
+            border: 1px dashed #c0c0c0;
+            border-radius: 4px;
+            font-size: 1.1em;
+        }}
     </style>
+    
+    <script>
+        function copyCodeBlock(button) {{
+            const codeContainer = button.closest('.code-block-container');
+            const codeContent = codeContainer.querySelector('.code-block-content');
+            const rawCode = codeContent.getAttribute('data-code');
+            
+            if (rawCode) {{
+                // 使用现代clipboard API或fallback到execCommand
+                if (navigator.clipboard && window.isSecureContext) {{
+                    navigator.clipboard.writeText(rawCode).then(function() {{
+                        showCopySuccess(button);
+                    }}, function(err) {{
+                        console.error('复制失败:', err);
+                        fallbackCopyTextToClipboard(rawCode, button);
+                    }});
+                }} else {{
+                    fallbackCopyTextToClipboard(rawCode, button);
+                }}
+            }}
+        }}
+        
+        function fallbackCopyTextToClipboard(text, button) {{
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            
+            // 避免滚动到底部
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {{
+                const successful = document.execCommand('copy');
+                if (successful) {{
+                    showCopySuccess(button);
+                }} else {{
+                    alert('复制失败，请手动复制代码');
+                }}
+            }} catch (err) {{
+                console.error('Fallback复制失败:', err);
+                alert('复制失败，请手动复制代码');
+            }}
+            
+            document.body.removeChild(textArea);
+        }}
+        
+        function showCopySuccess(button) {{
+            const originalText = button.textContent;
+            button.textContent = '已复制!';
+            button.style.background = '#48bb78';
+            
+            setTimeout(() => {{
+                button.textContent = originalText;
+                button.style.background = '#485a70';
+            }}, 2000);
+        }}
+    </script>
+    
     <div style="
         font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
         font-size: 11pt;

@@ -308,11 +308,11 @@ class ChineseTextSummarizer:
         return "。".join(summary_sentences) + "。"
 
 
+summarizer = ChineseTextSummarizer()
+
+
 # 使用示例
 def main():
-    # 创建摘要器实例
-    summarizer = ChineseTextSummarizer()
-
     # 测试文本
     test_text = """
 <!--角色背景已结束-->**`

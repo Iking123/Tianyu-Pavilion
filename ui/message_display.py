@@ -32,6 +32,14 @@ class MessageDisplayArea(QWidget):
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         # +++ 确保垂直滚动条始终可用 +++
         self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.slider_upwards = False
+        scrollbar = self.scroll_area.verticalScrollBar()
+        scrollbar.sliderPressed.connect(self.set_slider_upwards)
+        scrollbar.sliderReleased.connect(
+            lambda: QTimer.singleShot(
+                500, lambda: setattr(self, "slider_upwards", False)
+            )
+        )
 
         # 创建容器
         self.container = QWidget()
@@ -43,11 +51,33 @@ class MessageDisplayArea(QWidget):
         self.scroll_area.setWidget(self.container)
         layout.addWidget(self.scroll_area)
 
+    def set_slider_upwards(self):
+        scrollbar = self.scroll_area.verticalScrollBar()
+        if scrollbar.value() < scrollbar.maximum():
+            self.slider_upwards = True
+
+    def keyPressEvent(self, event):
+        super().keyPressEvent(event)
+        if event.key() == Qt.Key_Up:
+            self.set_slider_upwards()
+
+    def keyReleaseEvent(self, event):
+        super().keyReleaseEvent(event)
+        if event.key() == Qt.Key_Up:
+            QTimer.singleShot(1500, lambda: setattr(self, "slider_upwards", False))
+
+    def wheelEvent(self, event):
+        super().wheelEvent(event)
+        delta = event.angleDelta().y()
+        if delta > 0:
+            self.set_slider_upwards()
+            QTimer.singleShot(1500, lambda: setattr(self, "slider_upwards", False))
+
     def add_message(self, widget, auto_scroll=True):
         """添加消息组件"""
         self.container_layout.addWidget(widget)
         if auto_scroll:
-            QTimer.singleShot(100, self.scroll_to_bottom)  # 延迟滚动确保布局完成
+            QTimer.singleShot(300, self.scroll_to_bottom)  # 延迟滚动确保布局完成
         return widget
 
     def add_message_by_role(self, role, content, is_thinking=False, auto_scroll=True):
@@ -105,7 +135,9 @@ class MessageDisplayArea(QWidget):
                 widget.deleteLater()
 
     def scroll_to_bottom(self):
-        """滚动到底部"""
+        """滚动到底部，若用户最近操作了滚动条则不滚动"""
+        if self.slider_upwards:
+            return
         scrollbar = self.scroll_area.verticalScrollBar()
         scrollbar.setValue(scrollbar.maximum())
 

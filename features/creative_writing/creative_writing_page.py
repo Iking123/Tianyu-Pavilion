@@ -48,7 +48,7 @@ class CreativeWritingPage(QWidget):
         toolbar_layout.setContentsMargins(10, 5, 10, 5)
 
         # 返回按钮
-        self.back_button = GoBackButton(self, "返回主页")
+        self.back_button = GoBackButton(self)
 
         # 页面标题
         title_label = QLabel("创意写作")

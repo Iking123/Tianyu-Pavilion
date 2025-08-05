@@ -2,17 +2,15 @@ from PyQt5.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
-    QPushButton,
     QLabel,
-    QSpacerItem,
-    QSizePolicy,
-    QTextEdit,
     QFrame,
     QScrollArea,
+    QSizePolicy,
+    QSpacerItem,
 )
-from PyQt5.QtGui import QIcon, QFont, QColor, QRegExpValidator
-from PyQt5.QtCore import Qt, QRegExp
-from ui.components import GoBackButton
+from PyQt5.QtGui import QFont
+from PyQt5.QtCore import Qt
+from ui.components import GoBackButton, RestartButton
 from ui.message_display import MessageDisplayArea
 from ui.input_panel import InputPanel
 from core.config_manager import get_assist
@@ -41,40 +39,29 @@ class IdiomSolitairePage(QWidget):
         toolbar_layout = QHBoxLayout(toolbar)
         toolbar_layout.setContentsMargins(10, 5, 10, 5)
 
-        # 返回按钮
+        # 顶部按钮
         self.back_button = GoBackButton(self, "返回游戏列表")
+        self.restart_button = RestartButton(self, "重新开局")
 
         # 页面标题
         title_label = QLabel("成语接龙")
         title_label.setFont(QFont("Arial", 16, QFont.Bold))
         title_label.setStyleSheet("color: #2C3E50;")
 
-        # 重新开始按钮
-        self.restart_button = QPushButton("重新开始")
-        self.restart_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #4A90E2;
-                color: white;
-                border: none;
-                padding: 8px 15px;
-                border-radius: 5px;
-                font-size: 8pt;
-                font-family: Microsoft YaHei;
-            }
-            QPushButton:hover {
-                background-color: #3A7BC8;
-            }
-        """
+        # 居中布局
+        button_width = self.back_button.width() + 10 + self.restart_button.width()
+        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
+        toolbar_layout.addWidget(self.restart_button, alignment=Qt.AlignLeft)
+        toolbar_layout.addSpacerItem(
+            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
         )
-        self.restart_button.clicked.connect(self.restart_game)
-
-        toolbar_layout.addWidget(self.back_button)
-        toolbar_layout.addStretch()
-        toolbar_layout.addWidget(title_label)
-        toolbar_layout.addStretch()
-        toolbar_layout.addWidget(self.restart_button)
-
+        toolbar_layout.addWidget(title_label, alignment=Qt.AlignCenter)
+        toolbar_layout.addSpacerItem(
+            QSpacerItem(button_width, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        )
+        toolbar_layout.addSpacerItem(
+            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        )
         layout.addWidget(toolbar)
 
         # 游戏说明区域
@@ -137,6 +124,7 @@ class IdiomSolitairePage(QWidget):
         self.input_panel = InputPanel(
             send_callback=self.handle_player_input, threshold=4, placeholder="输入成语"
         )
+        self.input_panel.setFixedHeight(180)
         self.input_panel.setStyleSheet(
             "background-color: #F8F9FA; border-radius: 10px;"
         )
@@ -213,7 +201,7 @@ class IdiomSolitairePage(QWidget):
 
         # 不再由AI先开始，等待用户输入
 
-    def restart_game(self):
+    def restart(self):
         """重新开始游戏"""
         self.start_game()
         self.update_history()
@@ -452,7 +440,7 @@ class IdiomSolitairePage(QWidget):
             end_message = (
                 "🎉 <b>恭喜你赢了！</b> 🎉\n\n"
                 f"{message or ''}\n"
-                "点击'重新开始'按钮再来一局。"
+                "点击左上角的重来按钮再来一局。"
             )
         else:
             self.current_idiom = ""
@@ -462,7 +450,7 @@ class IdiomSolitairePage(QWidget):
             end_message = (
                 "😅 <b>很遗憾，你输了！</b>\n\n"
                 f"{message or '未知错误'}\n"
-                "点击'重新开始'按钮再试一次！"
+                "点击左上角的重来按钮再试一次！"
             )
 
         self.message_display.add_message_by_role(get_assist(), end_message)

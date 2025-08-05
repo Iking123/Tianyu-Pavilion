@@ -178,7 +178,7 @@ class CharacterDetailDialog(QDialog):
         basic_labels = [
             ("姓名", "name"),
             ("性别", "gender"),
-            ("年龄", "age"),
+            ("年龄或生年", "age"),
             ("身份", "identity"),
         ]
 

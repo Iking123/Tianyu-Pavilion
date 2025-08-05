@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QFont, QColor
 from core.character_manager import get_all_characters, get_character_name
+from core.config_manager import get_assist
 from core.fiction_manager import get_fiction_by_id
 from features.character.character_button import SelectableCharacterButton
 from ui.card_widget import CardWidget
@@ -35,9 +36,10 @@ class FictionButton(CardWidget):
 class FictionStartDialog(QDialog):
     """小说启动对话框，用于选择角色"""
 
-    def __init__(self, parent=None, fiction_id=None):
+    def __init__(self, parent=None, fiction_id=None, name=None):
         super().__init__(parent)
         self.fiction_id = fiction_id
+        self.name = name
         self.selected_characters = []
         self.forced_character_id = None
         self.characters_num_level = 3  # 默认3级（最多3人）
@@ -64,7 +66,7 @@ class FictionStartDialog(QDialog):
         layout.setContentsMargins(20, 20, 20, 20)
 
         # 标题
-        title_label = QLabel("请选择参与小说的角色")
+        title_label = QLabel(f"请选择参与《{self.name}》的角色")
         title_label.setFont(QFont("Arial", 14, QFont.Bold))
         title_label.setStyleSheet("color: #2C3E50; margin-bottom: 10px;")
         title_label.setAlignment(Qt.AlignCenter)
@@ -72,13 +74,14 @@ class FictionStartDialog(QDialog):
 
         # 角色数量提示
         max_characters = self.get_max_characters()
-        subtitle_text = f"最多可选择 {max_characters} 个角色"
+        subtitle_text = f"本小说的开局将由 <b>{get_assist(True)}</b> 撰写<br>最多可选择 {max_characters} 个角色"
         if self.forced_character_id:
             subtitle_text += " (包含强制角色)"
 
         subtitle_label = QLabel(subtitle_text)
         subtitle_label.setFont(QFont("Arial", 10))
         subtitle_label.setStyleSheet("color: #7F8C8D; margin-bottom: 10px;")
+        subtitle_label.setTextFormat(Qt.TextFormat.RichText)
         subtitle_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(subtitle_label)
 
@@ -228,8 +231,8 @@ class FictionStartDialog(QDialog):
                 QMessageBox.warning(
                     self,
                     "选择限制",
-                    "• 由于本小说至多容许10名主角进入，为节约token，仅能选有简介的角色！\n\n"
-                    f"• 如果想用{name}，请在角色编辑器页面为{name}添加简介！",
+                    "• 由于本小说至多容许10名主角进入，为节约token，仅能选有简介的角色！\n"
+                    f"• 如果想用 {name} ，请在角色编辑器页面为 {name} 添加简介！",
                 )
                 return
 

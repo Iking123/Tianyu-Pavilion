@@ -43,6 +43,7 @@ class CharacterEditor(QWidget):
         self.parent = parent
         self.current_character = None
         self.current_mode = "view"  # view, edit, delete, summary
+        self.names = []
         self.setup_ui()
         self.summary_completed.connect(self.handle_summary_result)  # 连接信号
 
@@ -59,7 +60,7 @@ class CharacterEditor(QWidget):
         toolbar_layout.setContentsMargins(10, 5, 10, 5)
 
         # 返回按钮
-        self.back_button = GoBackButton(self, "返回主页")
+        self.back_button = GoBackButton(self)
 
         # 标题
         title_label = QLabel("角色编辑器")
@@ -316,7 +317,7 @@ class CharacterEditor(QWidget):
         """生成角色摘要并保存"""
         # 创建进度对话框 - 必须在主线程中创建
         self.progress = QProgressDialog(
-            f"正在使用 {get_assist()[10:]} 为 {character['name']} 生成摘要...",
+            f"正在使用 {get_assist(True)} 为 {character['name']} 生成摘要...",
             None,
             0,
             0,
@@ -423,7 +424,20 @@ class CharacterEditDialog(QDialog):
 
         # 性别
         self.gender_combo = QComboBox()
-        self.gender_combo.addItems(["男", "女", "其他"])
+        self.gender_combo.addItems(
+            [
+                "男",
+                "女",
+                "无性",
+                "双性",
+                "MtF",
+                "FtM",
+                "酷儿",
+                "武装直升机",
+                "沃尔玛购物袋",
+                "其他",
+            ]
+        )
         current_gender = self.character.get("gender", "")
         if current_gender:
             index = self.gender_combo.findText(current_gender)
@@ -431,12 +445,12 @@ class CharacterEditDialog(QDialog):
                 self.gender_combo.setCurrentIndex(index)
         form_layout.addRow("性别:", self.gender_combo)
 
-        # 年龄
+        # 年龄或生年
         self.age_input = QLineEdit()
         self.age_input.setText(self.character.get("age", ""))
         self.age_input.setMaxLength(10)
         self.age_input.setToolTip("至多10个字符")
-        form_layout.addRow("年龄:", self.age_input)
+        form_layout.addRow("年龄或生年:", self.age_input)
 
         # 身份
         self.identity_input = QLineEdit()

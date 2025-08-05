@@ -49,7 +49,7 @@ class GamePage(QWidget):
         toolbar_layout.setContentsMargins(10, 5, 10, 5)
 
         # 返回按钮 - 使用新的自定义组件
-        self.back_button = GoBackButton(self, "返回主页")
+        self.back_button = GoBackButton(self)
 
         # 页面标题
         title_label = QLabel("小游戏")

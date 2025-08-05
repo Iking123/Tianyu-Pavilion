@@ -1,7 +1,9 @@
 import inspect
-from PyQt5.QtCore import pyqtSlot, QTimer
+from PyQt5.QtGui import QIcon, QPixmap, QPainter, QPainterPath
+from PyQt5.QtCore import Qt, pyqtSlot, QTimer
 import sys
 import os
+import json
 
 
 def case_insensitive_find(s, sub, start=None, end=None):
@@ -111,3 +113,57 @@ def print_method_source(method):
             print("源代码不可访问（可能是内置方法）")
     else:
         print("输入的不是类方法")
+
+
+def split_reserve_sep(s, separator):
+    # 查找分隔符首次出现的位置
+    index = s.find(separator)
+
+    if index == -1:
+        # 未找到分隔符时，整个字符串作为第一部分
+        return (s, "")
+    else:
+        # 找到分隔符时分割字符串
+        # 第一部分：从头到分隔符起始位置
+        part1 = s[:index]
+        # 第二部分：从分隔符起始位置到结束（包含分隔符）
+        part2 = s[index:]
+        return (part1, part2)
+
+
+def read_json(fileName=""):
+    if fileName != "":
+        strList = fileName.split(".")
+        if strList[len(strList) - 1].lower() == "json":
+            with open(fileName, mode="r", encoding="utf-8") as file:
+                return json.loads(file.read())
+
+
+def create_circular_icon(icon_path):
+    # 加载原始图标
+    pixmap = QPixmap(icon_path)
+    if pixmap.isNull():
+        return QIcon()
+
+    # 创建透明画布
+    result = QPixmap(pixmap.size())
+    result.fill(Qt.transparent)
+
+    # 设置圆形蒙版
+    painter = QPainter(result)
+    painter.setRenderHint(QPainter.Antialiasing)
+
+    # 创建圆形路径 (顶着上边界+水平居中)
+    diameter = min(pixmap.width(), pixmap.height())
+    x = (pixmap.width() - diameter) / 2
+    path = QPainterPath()
+    path.addEllipse(x, 0, diameter, diameter)  # y=0 确保顶着上边界
+
+    # 应用圆形蒙版
+    painter.setClipPath(path)
+
+    # 绘制原始图像
+    painter.drawPixmap(0, 0, pixmap)
+    painter.end()
+
+    return QIcon(result)

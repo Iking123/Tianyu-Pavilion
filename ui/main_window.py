@@ -15,18 +15,7 @@ from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QFont, QColor, QPalette
 from core.config_manager import get_config, update_config
 from .home_page import HomePage
-from features.chat.chat_page import ChatPage
-from features.game.game_page import GamePage
-from features.interactive_novel.interactive_novel_page import InteractiveNovelPage
-from features.creative_writing.creative_writing_page import CreativeWritingPage
-from features.settings.settings_page import SettingsPage
-from features.character.character_editor import CharacterEditor
-from features.interactive_novel.fiction_page import InteractiveFictionPage
 from .styles import *
-
-# 具体页面导入
-from features.game.idiom_solitaire_page import IdiomSolitairePage
-from features.creative_writing.zero_point_page import ZeroPointPage
 
 
 class MainWindow(QMainWindow):
@@ -230,31 +219,47 @@ class MainWindow(QMainWindow):
             self.stacked_widget.setCurrentWidget(self.home_page)
         elif index == 1:  # 聊天页面
             if not self.chat_page:
+                from features.chat.chat_page import ChatPage
+
                 self.chat_page = ChatPage(self)
                 self.stacked_widget.addWidget(self.chat_page)
             self.stacked_widget.setCurrentWidget(self.chat_page)
         elif index == 2:  # 游戏列表
             if not self.game_page:
+                from features.game.game_page import GamePage
+
                 self.game_page = GamePage(self)
                 self.stacked_widget.addWidget(self.game_page)
             self.stacked_widget.setCurrentWidget(self.game_page)
         elif index == 3:  # 交互小说
             if not self.interactive_page:
+                from features.interactive_novel.interactive_novel_page import (
+                    InteractiveNovelPage,
+                )
+
                 self.interactive_page = InteractiveNovelPage(self)
                 self.stacked_widget.addWidget(self.interactive_page)
             self.stacked_widget.setCurrentWidget(self.interactive_page)
         elif index == 4:  # 创意写作
             if not self.creative_page:
+                from features.creative_writing.creative_writing_page import (
+                    CreativeWritingPage,
+                )
+
                 self.creative_page = CreativeWritingPage(self)
                 self.stacked_widget.addWidget(self.creative_page)
             self.stacked_widget.setCurrentWidget(self.creative_page)
         elif index == 5:  # 设置页面
             if not self.settings_page:
+                from features.settings.settings_page import SettingsPage
+
                 self.settings_page = SettingsPage(self)
                 self.stacked_widget.addWidget(self.settings_page)
             self.stacked_widget.setCurrentWidget(self.settings_page)
         elif index == 6:  # 角色编辑器页面
             if not self.character_editor:
+                from features.character.character_editor import CharacterEditor
+
                 self.character_editor = CharacterEditor(self)
                 self.stacked_widget.addWidget(self.character_editor)
             self.stacked_widget.setCurrentWidget(self.character_editor)
@@ -290,6 +295,8 @@ class MainWindow(QMainWindow):
         if game_name not in self.game_pages:
             # 根据游戏名称创建对应的游戏页面
             if game_name == "成语接龙":
+                from features.game.idiom_solitaire_page import IdiomSolitairePage
+
                 self.game_pages[game_name] = IdiomSolitairePage(self)
                 # 将新游戏页面添加到堆栈中
                 self.stacked_widget.addWidget(self.game_pages[game_name])
@@ -310,7 +317,17 @@ class MainWindow(QMainWindow):
         """打开指定的写作页面"""
         if writing_name not in self.writing_pages:
             # 根据创意写作名称创建对应的写作页面
+            if writing_name == "抽象作文":
+                from features.creative_writing.abstract_article_page import (
+                    AbstractArticlePage,
+                )
+
+                self.writing_pages[writing_name] = AbstractArticlePage(self)
+                # 将新写作页面添加到堆栈中
+                self.stacked_widget.addWidget(self.writing_pages[writing_name])
             if writing_name == "零分作文":
+                from features.creative_writing.zero_point_page import ZeroPointPage
+
                 self.writing_pages[writing_name] = ZeroPointPage(self)
                 # 将新写作页面添加到堆栈中
                 self.stacked_widget.addWidget(self.writing_pages[writing_name])

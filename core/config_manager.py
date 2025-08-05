@@ -129,17 +129,19 @@ def get_model():
     return get_config("model")
 
 
-def get_assist():
+def get_assist(nature=False):
     """获取现在的助手名"""
     model = get_model()
+    name = ""
     if model == "deepseek-reasoner":
-        return "assistant_DeepSeek-R1"
+        name = "assistant_DeepSeek-R1"
     elif model == "deepseek-chat":
-        return "assistant_DeepSeek-V3"
+        name = "assistant_DeepSeek-V3"
     elif model == "doubao-seed-1-6-thinking-250715":
-        return "assistant_豆包1.6 Thinking"
+        name = "assistant_豆包1.6 Thinking"
     elif model == "doubao-seed-1-6-250615":
-        return "assistant_豆包1.6"
+        name = "assistant_豆包1.6"
+    return name[10:] if nature else name
 
 
 def get_base_url():

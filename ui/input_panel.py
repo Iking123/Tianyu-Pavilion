@@ -95,8 +95,6 @@ class InputPanel(QWidget):
     def __init__(
         self,
         send_callback=None,
-        clear_callback=None,
-        show_clear_button=False,
         threshold=None,
         placeholder="输入消息...",
         tooltip=None,
@@ -104,8 +102,6 @@ class InputPanel(QWidget):
     ):
         super().__init__(parent)
         self.send_callback = send_callback
-        self.clear_callback = clear_callback
-        self.show_clear_button = show_clear_button
         self.threshold = threshold
         self.placeholder = placeholder
         self.button_row = None  # 底部按钮行布局
@@ -139,7 +135,9 @@ class InputPanel(QWidget):
         self.input_field.setFont(input_font)
 
         # 移除输入框边框（由容器提供）
-        input_style = INPUT_STYLE.replace("border: 1px solid #CCCCCC;", "border: none;")
+        input_style = INPUT_STYLE.replace(
+            "border: 1px solid #CCCCCC;", "border: none;"
+        ).replace("padding: 12px;", "padding: 12px 12px 0 12px;")
         self.input_field.setStyleSheet(input_style)
         container_layout.addWidget(self.input_field)
 
@@ -153,19 +151,8 @@ class InputPanel(QWidget):
         # 创建底部按钮行
         self.button_row = QWidget()
         button_row_layout = QHBoxLayout(self.button_row)
-        button_row_layout.setContentsMargins(10, 10, 10, 10)
+        button_row_layout.setContentsMargins(10, 0, 10, 10)
         button_row_layout.setSpacing(10)
-
-        # 添加清除按钮（如果有）
-        if self.show_clear_button:
-            self.clear_button = QPushButton("新对话")
-            self.clear_button.setFixedHeight(40)
-            button_font = QFont()
-            button_font.setPointSize(11)
-            self.clear_button.setFont(button_font)
-            self.clear_button.setStyleSheet(BUTTON_STYLES["clear"])
-            self.clear_button.clicked.connect(self.on_clear_clicked)
-            button_row_layout.addWidget(self.clear_button)
 
         # 添加拉伸空间（按钮将居右）
         button_row_layout.addStretch()
@@ -237,14 +224,8 @@ class InputPanel(QWidget):
 
         button.clicked.connect(callback)
 
-        # 在清除按钮后添加新按钮
         layout = self.button_row.layout()
-        if self.show_clear_button and layout.indexOf(self.clear_button) >= 0:
-            # 在清除按钮后添加
-            layout.insertWidget(layout.indexOf(self.clear_button) + 1, button)
-        else:
-            # 在清除按钮位置添加（如果没有清除按钮）
-            layout.insertWidget(0, button)
+        layout.insertWidget(0, button)
 
         return button
 
@@ -258,11 +239,6 @@ class InputPanel(QWidget):
             self.send_button.setEnabled(False)  # 立即禁用
             self.send_callback(text)
             QTimer.singleShot(100, self.clear_input)
-
-    def on_clear_clicked(self):
-        """处理清除按钮点击事件"""
-        if self.clear_callback:
-            self.clear_callback()
 
     def get_input_text(self):
         """获取输入框内容"""

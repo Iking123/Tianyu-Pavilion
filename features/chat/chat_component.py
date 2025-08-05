@@ -72,8 +72,6 @@ class ChatComponent(QWidget):
         # 使用新的输入面板组件
         self.input_panel = InputPanel(
             send_callback=self.send_message,
-            clear_callback=self.clear_conversation,
-            show_clear_button=True,
             threshold=self.threshold,
             placeholder=self.placeholder,
         )
@@ -92,27 +90,28 @@ class ChatComponent(QWidget):
         self.search_timer.setSingleShot(True)
         self.search_timer.timeout.connect(self.perform_search)
 
-        # # 添加测试消息
-        # test_message = self.message_display.add_message_by_role(
-        #     "",
-        #     "测试\n",
-        #     # "行内公式测试: $E = mc^2$, 和 $\\sum_{i=1}^n i = \\frac{n(n+1)}{2}$\n\n"
-        #     # "测试\n"
-        #     # "测试\n"
-        #     # "测测又试试\n",
-        # )
-        # # test_message.append_content(
-        # #     "- 列表测试\n"
-        # #     "- 块级公式测试:\n"
-        # #     "$$\n"
-        # #     "\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}\n"
-        # #     "$$\n"
-        # #     "- 以及:\n"
-        # #     "\\[\n"
-        # #     "f(x) = \\frac{1}{\\sigma\\sqrt{2\\pi}} e^{-\\frac{(x-\\mu)^2}{2\\sigma^2}}\n"
-        # #     "\\]"
-        # # )
-        # test_message.force_render()
+    #         # 添加测试消息
+    #         test_message = self.message_display.add_message_by_role(
+    #             "character_default_1",
+    #             """# 测试
+    # `喵`
+
+    # ```python
+    # print("test")
+    # ```
+    # - 首先
+    #     1. 首先啊
+    #     2. 然后啊
+    #     3. 再然后啊
+    # - 其次
+
+    # 1. 那我问你
+    #     - 你是男的
+    #     - 还是女的
+    #     - 你看得懂$1+1=2$吗""",
+    #         )
+    #         test_message.force_render()
+    #         print(test_message.content_browser.toHtml())
 
     def safe_update_time(self):
         """安全更新时间显示"""
@@ -225,13 +224,13 @@ class ChatComponent(QWidget):
         # 滚动到底部
         self.message_display.scroll_to_bottom()
 
-    def clear_conversation(self, force=False):
-        """清除对话历史"""
+    def restart(self, force=False):
+        """重新开始对话（清除此次对话历史）"""
         if not force:
             # 创建确认对话框
             reply = QMessageBox.question(
                 self,
-                "确认清除",
+                "确认重来",
                 "即将清除对话历史并开启新对话，确定执行吗？",
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No,
@@ -241,7 +240,7 @@ class ChatComponent(QWidget):
             if reply == QMessageBox.No:
                 # 使用主窗口设置状态
                 if self.main_window:
-                    self.main_window.set_status("清除操作已取消")
+                    self.main_window.set_status("重来操作已取消")
                 return
 
         # 停止当前工作线程
@@ -266,7 +265,7 @@ class ChatComponent(QWidget):
 
         # 使用主窗口设置状态
         if self.main_window:
-            self.main_window.set_status("对话已清除")
+            self.main_window.set_status("新对话")
 
     # 以下是搜索功能方法：
 

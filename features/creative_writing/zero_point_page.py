@@ -11,9 +11,7 @@ from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtCore import Qt
 from core.worker import Worker
 from features.chat.chat_component import ChatComponent
-import types
-
-from ui.components import GoBackButton
+from ui.components import GoBackButton, RestartButton
 
 
 class ZeroPointPage(QWidget):
@@ -34,17 +32,24 @@ class ZeroPointPage(QWidget):
         toolbar_layout = QHBoxLayout(toolbar)
         toolbar_layout.setContentsMargins(10, 5, 10, 5)
 
-        # 返回按钮
+        # 创建聊天组件
+        self.chat_component = ChatComponent(self.main_window, False, "输入作文标题", 10)
+        self.restart = self.chat_component.restart
+        ipp = self.chat_component.input_panel
+        ipp.send_callback = self.send_message
+
+        # 顶部按钮
         self.back_button = GoBackButton(self, "返回写作列表")
+        self.restart_button = RestartButton(self)
 
         # 页面标题
         title_label = QLabel("零分作文生成器")
         title_label.setFont(QFont("Arial", 22, QFont.Bold))
         title_label.setStyleSheet("color: #2C3E50;")
 
-        button_width = self.back_button.width()
-
+        button_width = self.back_button.width() + 10 + self.restart_button.width()
         toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
+        toolbar_layout.addWidget(self.restart_button, alignment=Qt.AlignLeft)
         toolbar_layout.addSpacerItem(
             QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
         )
@@ -55,17 +60,11 @@ class ZeroPointPage(QWidget):
         toolbar_layout.addSpacerItem(
             QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
         )
-
         layout.addWidget(toolbar)
 
-        # 创建聊天组件
-        self.chat_component = ChatComponent(self.main_window, False, "输入作文标题", 10)
-        layout.addWidget(self.chat_component)
-        ipp = self.chat_component.input_panel
-        ipp.send_callback = self.send_message
-
-        # 设置布局策略
+        # 设置聊天布局
         self.chat_component.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        layout.addWidget(self.chat_component)
 
     def send_message(self, user_input):
         if not user_input:

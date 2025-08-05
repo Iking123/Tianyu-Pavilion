@@ -1,8 +1,13 @@
 import json
 import os
 import uuid
-from .config_manager import _encrypt_config, _decrypt_config, _get_key
-from .hardcode import HARDCODED_FICTIONS
+from .config_manager import _encrypt_config, _decrypt_config
+from funcs import resource_path
+
+if os.path.exists(resource_path("core/hardcode_fictions.py")):
+    from .hardcode_fictions import HARDCODED_FICTIONS
+else:
+    HARDCODED_FICTIONS = []
 
 # 小说信息加密文件路径
 FICTIONS_ENC_PATH = "fictions.enc"

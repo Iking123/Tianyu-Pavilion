@@ -68,9 +68,9 @@ class HomePage(QWidget):
 
         # 创建四个功能按钮
         self.chat_btn = self.create_function_button("聊天", "#3498DB")
-        self.game_btn = self.create_function_button("小游戏", "#27ae60")
-        self.interactive_btn = self.create_function_button("交互小说", "#f39c12")
         self.creative_btn = self.create_function_button("创意写作", "#9b59b6")
+        self.interactive_btn = self.create_function_button("交互小说", "#f39c12")
+        self.game_btn = self.create_function_button("小游戏", "#27ae60")
 
         # 中央按钮区域布局
         central_layout = QVBoxLayout()
@@ -90,10 +90,10 @@ class HomePage(QWidget):
         central_widget.setLayout(central_layout)
 
         grid_layout.addWidget(self.chat_btn, 0, 0)
-        grid_layout.addWidget(self.game_btn, 0, 1)
+        grid_layout.addWidget(self.creative_btn, 0, 1)
         grid_layout.addWidget(central_widget, 0, 2, 2, 1)  # 占据两行
         grid_layout.addWidget(self.interactive_btn, 1, 0)
-        grid_layout.addWidget(self.creative_btn, 1, 1)
+        grid_layout.addWidget(self.game_btn, 1, 1)
 
         layout.addLayout(grid_layout)
         layout.addStretch(1)

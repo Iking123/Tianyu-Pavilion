@@ -32,8 +32,6 @@ from ui.components import GoBackButton
 from ui.styles import BUTTON_STYLES
 from .fiction_button import FictionButton, FictionStartDialog
 from ui.input_panel import CustomTextEdit
-from .fiction_page import InteractiveFictionPage
-from .world_devastation_page import WorldDevastationPage
 
 
 class FictionEditDialog(QDialog):
@@ -142,6 +140,7 @@ class InteractiveNovelPage(QWidget):
         self.parent = parent
         self.current_fiction = None
         self.current_mode = "view"  # view, edit, delete
+        self.names = []
         self.setup_ui()
 
     def setup_ui(self):
@@ -157,7 +156,7 @@ class InteractiveNovelPage(QWidget):
         toolbar_layout.setContentsMargins(10, 5, 10, 5)
 
         # 返回按钮
-        self.back_button = GoBackButton(self, "返回主页")
+        self.back_button = GoBackButton(self)
         toolbar_layout.addWidget(self.back_button)
 
         # 标题
@@ -379,25 +378,28 @@ class InteractiveNovelPage(QWidget):
 
     def start_fiction(self, fiction):
         """启动小说"""
-        dialog = FictionStartDialog(self, fiction["id"])
+        dialog = FictionStartDialog(self, fiction["id"], fiction["name"])
         if dialog.exec_() == QDialog.Accepted:
             # 获取选择的角色
             selected_characters = dialog.selected_characters
 
             # 创建小说页面并切换到该页面
-            fiction_page = (
-                WorldDevastationPage(
+            if "default_2" in selected_characters:
+                from .world_devastation_page import WorldDevastationPage
+
+                fiction_page = WorldDevastationPage(
                     main_window=self.parent,
                     fiction_id=fiction["id"],
                     character_ids=selected_characters,
                 )
-                if "default_2" in selected_characters
-                else InteractiveFictionPage(
+            else:
+                from .fiction_page import InteractiveFictionPage
+
+                fiction_page = InteractiveFictionPage(
                     main_window=self.parent,
                     fiction_id=fiction["id"],
                     character_ids=selected_characters,
                 )
-            )
 
             # 添加到主窗口并切换页面
             if self.parent:

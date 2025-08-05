@@ -1,15 +1,6 @@
-from PyQt5.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QPushButton,
-    QButtonGroup,
-    QSplitter,
-)
-from core.worker import Worker
+from PyQt5.QtWidgets import QMessageBox
 from features.chat.chat_component import ChatComponent
 from .fiction_parser import FictionParser
-from ui.styles import BUTTON_STYLES
 from core.character_manager import find_character_id
 
 
@@ -30,7 +21,7 @@ class FictionChatComponent(ChatComponent):
 
         self.character_ids = character_ids
 
-        self.parser = FictionParser()  # 创建解析器实例
+        self.parser = FictionParser(main_window)  # 创建解析器实例
         self.current_options = []
         self.option_buttons = []
         self.page = parent
@@ -40,7 +31,8 @@ class FictionChatComponent(ChatComponent):
         if role and role.startswith("assistant") and not is_thinking:
             # 使用解析器处理内容
             messages = self.parser.parse(content)
-
+            scrollbar = self.message_display.scroll_area.verticalScrollBar()
+            at_bottom = bool(scrollbar) and scrollbar.value() == scrollbar.maximum()
             for msg in messages:
                 match (msg["type"]):
                     case "narration":
@@ -52,7 +44,9 @@ class FictionChatComponent(ChatComponent):
                             )
                         else:
                             self.message_display.finish_last_message()
-                            self.message_display.add_message_by_role("", msg["content"])
+                            self.message_display.add_message_by_role(
+                                "", msg["content"], auto_scroll=at_bottom
+                            )
                     case "dialogue":
                         # 角色对话 - 创建新消息控件
                         self.message_display.finish_last_message()
@@ -60,8 +54,7 @@ class FictionChatComponent(ChatComponent):
                         id = find_character_id(self.character_ids, character)
                         dialogue = msg["content"]
                         self.message_display.add_message_by_role(
-                            f"character_{id}",
-                            dialogue,
+                            f"character_{id}", dialogue, auto_scroll=at_bottom
                         )
                     case "append":
                         # 追加到上一条消息
@@ -78,8 +71,10 @@ class FictionChatComponent(ChatComponent):
 
     def start_thinking(self, role):
         """开始思考时重置解析器"""
-        super().start_thinking(role)
-        self.parser = FictionParser()
+        self.thinking_widget = self.message_display.add_message_by_role(
+            role, "", is_thinking=True
+        )
+        self.parser = FictionParser(self.main_window)
 
     def start_replying(self, role):
         """开始回复时重置解析器，但并不创建助手回复控件"""
@@ -89,19 +84,20 @@ class FictionChatComponent(ChatComponent):
             self.thinking_widget.adjust_height()
             self.thinking_widget = None
 
-        self.parser = FictionParser()
+        self.parser = FictionParser(self.main_window)
 
     def show_options(self, options):
         """显示选项消息"""
         # 清除现有选项
         self.clear_options()
         self.current_options = options
-
+        scrollbar = self.message_display.scroll_area.verticalScrollBar()
+        at_bottom = bool(scrollbar) and scrollbar.value() == scrollbar.maximum()
         # 创建选项消息
         for option in options:
             # 添加选项消息，role设为"option"
             option_widget = self.message_display.add_message_by_role(
-                "option", option, auto_scroll=True
+                "option", option, auto_scroll=at_bottom
             )
             # 连接选项点击信号
             option_widget.option_clicked.connect(self.on_option_message_clicked)
@@ -137,16 +133,28 @@ class FictionChatComponent(ChatComponent):
         self.clear_options()
         super().send_message(message, role, display)
 
-    def clear_conversation(self, force=False):
-        """清除对话时同时清除选项"""
-        self.clear_options()
-        self.parser = FictionParser()  # 重置解析器
-        super().clear_conversation(force)
-
     def on_worker_finished(self):
-        """工作线程完成时调用，附加结局处理逻辑"""
-        super().on_worker_finished()
+        """工作线程完成时调用，附加选项处理和结局处理逻辑"""
+        if self.parser and self.parser.state == "option_block" and self.parser.buffer:
+            self.parser._parse_option_block(self.parser.buffer)
+            self.show_options(self.parser.current_options)
+
+        self.input_panel.set_send_enabled(True)
+        self.worker_active = False
+
+        # 完成当前助手消息
+        self.message_display.finish_assistant_message()
+
+        # 如果思考控件还存在，强制渲染它
+        if self.thinking_widget:
+            self.thinking_widget.force_render()
+            self.thinking_widget.adjust_height()
+            self.thinking_widget = None
+
         if not hasattr(self, "current_options") or len(self.current_options) == 0:
             self.input_panel.setVisible(False)
             if self.page:
                 self.page.over = True
+            self.main_window.set_status("🔚 小说已结局")
+        else:
+            self.main_window.set_status("就绪")

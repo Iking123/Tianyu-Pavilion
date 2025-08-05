@@ -2,8 +2,13 @@ import json
 import os
 import threading
 import uuid
-from .config_manager import _encrypt_config, _decrypt_config, _get_key
-from .hardcode import HARDCODED_CHARACTERS
+from .config_manager import _encrypt_config, _decrypt_config
+from funcs import resource_path
+
+if os.path.exists(resource_path("core/hardcode_characters.py")):
+    from .hardcode_characters import HARDCODED_CHARACTERS
+else:
+    HARDCODED_CHARACTERS = []
 
 # 角色信息加密文件路径
 CHARACTERS_ENC_PATH = "characters.enc"
@@ -148,7 +153,7 @@ def format_character(id, prefix="", summary=False):
         return ""
     if not summary:
         return f"""### {prefix}基础信息
-|名称|性别|年龄|身份|性格|爱好|
+|名称|性别|年龄或生年|身份|性格|爱好|
 |-|-|-|-|-|-|
 |`{char.get("name","")}`|`{char.get("gender","")}`|`{char.get("age","")}`|`{char.get("identity","")}`|`{char.get("personality","")}`|`{char.get("hobbies","")}`|
 
@@ -157,9 +162,15 @@ def format_character(id, prefix="", summary=False):
 {char.get("background","")}
 ```
 """
+
+    s = char.get("summary", "")
+    if not s:
+        from core.jieba_summarizer import summarizer
+
+        s = summarizer.summarize(format_character(id, prefix))
     return f"""### {prefix+":" if prefix else ""}{char.get("name","")}
 ```
-{char.get("summary","")}
+{s}
 ```
 """
 
@@ -169,7 +180,7 @@ def format_character_basic(id, prefix=""):
     if not char:
         return ""
     return f"""### {prefix+":" if prefix else ""}{char.get("name","")}
-|名称|性别|年龄|身份|性格|爱好|
+|名称|性别|年龄或生年|身份|性格|爱好|
 |-|-|-|-|-|-|
 |`{char.get("name","")}`|`{char.get("gender","")}`|`{char.get("age","")}`|`{char.get("identity","")}`|`{char.get("personality","")}`|`{char.get("hobbies","")}`|
 """
