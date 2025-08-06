@@ -1,23 +1,22 @@
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
-    QPushButton,
     QSizePolicy,
     QLabel,
     QSpacerItem,
 )
-from PyQt5.QtGui import QIcon, QFont
-
+from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt
 from ui.components import GoBackButton, RestartButton
 from .chat_component import ChatComponent
-from PyQt5.QtCore import Qt
+from ui.main_window import MainWindow
 
 
 class ChatPage(QWidget):
     """聊天功能页面，包含聊天组件和返回按钮"""
 
-    def __init__(self, main_window=None):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         self.main_window = main_window
 
@@ -42,7 +41,7 @@ class ChatPage(QWidget):
 
         # 页面标题
         title_label = QLabel("天语阁聊天器")
-        title_label.setFont(QFont("Arial", 22, QFont.Bold))
+        title_label.setFont(QFont("Arial", 22, QFont.Weight.Bold))
         title_label.setStyleSheet("color: #2C3E50;")
 
         # 布局结构：
@@ -55,23 +54,29 @@ class ChatPage(QWidget):
         # 获取按钮的宽度+padding作为占位宽度
         button_width = self.back_button.width() + 10 + self.restart_button.width()
 
-        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
-        toolbar_layout.addWidget(self.restart_button, alignment=Qt.AlignLeft)
-        toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        )
-        toolbar_layout.addWidget(title_label, alignment=Qt.AlignCenter)
-        toolbar_layout.addSpacerItem(
-            QSpacerItem(button_width, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        toolbar_layout.addWidget(
+            self.restart_button, alignment=Qt.AlignmentFlag.AlignLeft
         )
         toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        )
+        toolbar_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        toolbar_layout.addSpacerItem(
+            QSpacerItem(
+                button_width, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum
+            )
+        )
+        toolbar_layout.addSpacerItem(
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         )
 
         layout.addWidget(toolbar)
 
         # 设置聊天布局
-        self.chat_component.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.chat_component.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
         layout.addWidget(self.chat_component)
 
         # # 连接滚动按钮

@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QSizePolicy
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QTextCursor
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QSizePolicy
+from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QTextCursor
 from .qtext_message_widget import MessageWidget
 
 
@@ -25,13 +25,17 @@ class MessageDisplayArea(QWidget):
 
         # 设置滚动区域的尺寸策略
         self.scroll_area.setSizePolicy(
-            QSizePolicy.Expanding,  # 水平扩展
-            QSizePolicy.Expanding,  # 垂直扩展，但子控件决定实际高度
+            QSizePolicy.Policy.Expanding,  # 水平扩展
+            QSizePolicy.Policy.Expanding,  # 垂直扩展，但子控件决定实际高度
         )
 
-        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.scroll_area.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
         # +++ 确保垂直滚动条始终可用 +++
-        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.scroll_area.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
         self.slider_upwards = False
         scrollbar = self.scroll_area.verticalScrollBar()
         scrollbar.sliderPressed.connect(self.set_slider_upwards)
@@ -44,7 +48,7 @@ class MessageDisplayArea(QWidget):
         # 创建容器
         self.container = QWidget()
         self.container_layout = QVBoxLayout(self.container)
-        self.container_layout.setAlignment(Qt.AlignTop)
+        self.container_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.container_layout.setContentsMargins(10, 0, 10, 0)
         self.container_layout.setSpacing(15)
 

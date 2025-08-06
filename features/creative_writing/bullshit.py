@@ -1,6 +1,6 @@
 import random
 import time
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt6.QtCore import QThread, pyqtSignal
 from funcs import read_json, resource_path
 from core.hitokoto import get_hitokoto_with_speaker, is_punctuation
 from core.jieba_asso import generate_associate_words

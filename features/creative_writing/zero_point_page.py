@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -7,8 +7,8 @@ from PyQt5.QtWidgets import (
     QSpacerItem,
     QSizePolicy,
 )
-from PyQt5.QtGui import QIcon, QFont
-from PyQt5.QtCore import Qt
+from PyQt6.QtGui import QIcon, QFont
+from PyQt6.QtCore import Qt
 from core.worker import Worker
 from features.chat.chat_component import ChatComponent
 from ui.components import GoBackButton, RestartButton
@@ -44,26 +44,32 @@ class ZeroPointPage(QWidget):
 
         # 页面标题
         title_label = QLabel("零分作文生成器")
-        title_label.setFont(QFont("Arial", 22, QFont.Bold))
+        title_label.setFont(QFont("Arial", 22, QFont.Weight.Bold))
         title_label.setStyleSheet("color: #2C3E50;")
 
         button_width = self.back_button.width() + 10 + self.restart_button.width()
-        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
-        toolbar_layout.addWidget(self.restart_button, alignment=Qt.AlignLeft)
-        toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        )
-        toolbar_layout.addWidget(title_label, alignment=Qt.AlignCenter)
-        toolbar_layout.addSpacerItem(
-            QSpacerItem(button_width, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        toolbar_layout.addWidget(
+            self.restart_button, alignment=Qt.AlignmentFlag.AlignLeft
         )
         toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        )
+        toolbar_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        toolbar_layout.addSpacerItem(
+            QSpacerItem(
+                button_width, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum
+            )
+        )
+        toolbar_layout.addSpacerItem(
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         )
         layout.addWidget(toolbar)
 
         # 设置聊天布局
-        self.chat_component.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.chat_component.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
         layout.addWidget(self.chat_component)
 
     def send_message(self, user_input):
@@ -103,16 +109,24 @@ class ZeroPointPage(QWidget):
         chat.worker = Worker(user_input, chat.conversation_history)
 
         # 使用队列连接确保线程安全
-        chat.worker.start_thinking.connect(chat.start_thinking, Qt.QueuedConnection)
-        chat.worker.start_replying.connect(chat.start_replying, Qt.QueuedConnection)
-        chat.worker.update_signal.connect(chat.add_message_content, Qt.QueuedConnection)
+        chat.worker.start_thinking.connect(
+            chat.start_thinking, Qt.ConnectionType.QueuedConnection
+        )
+        chat.worker.start_replying.connect(
+            chat.start_replying, Qt.ConnectionType.QueuedConnection
+        )
+        chat.worker.update_signal.connect(
+            chat.add_message_content, Qt.ConnectionType.QueuedConnection
+        )
         chat.worker.status_signal.connect(
-            self.main_window.set_status, Qt.QueuedConnection
+            self.main_window.set_status, Qt.ConnectionType.QueuedConnection
         )
         chat.worker.search_complete.connect(
-            chat.message_display.add_search_result, Qt.QueuedConnection
+            chat.message_display.add_search_result, Qt.ConnectionType.QueuedConnection
         )
-        chat.worker.finished.connect(chat.on_worker_finished, Qt.QueuedConnection)
+        chat.worker.finished.connect(
+            chat.on_worker_finished, Qt.ConnectionType.QueuedConnection
+        )
 
         chat.worker.start()
 

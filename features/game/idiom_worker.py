@@ -1,6 +1,6 @@
 import re
 import json
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt6.QtCore import QThread, pyqtSignal
 import requests
 from core.config_manager import get_model, get_api_key, get_base_url
 

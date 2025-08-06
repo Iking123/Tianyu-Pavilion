@@ -1,5 +1,5 @@
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import (
+from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QVBoxLayout,
@@ -11,8 +11,8 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QSizePolicy,
 )
-from PyQt5.QtGui import QPixmap, QFont
-from PyQt5.QtCore import Qt
+from PyQt6.QtGui import QPixmap, QFont
+from PyQt6.QtCore import Qt
 import os
 from ui.message_display import MessageDisplayArea
 from ui.card_widget import CardWidget
@@ -124,8 +124,12 @@ class CharacterDetailDialog(QDialog):
         # === 基本信息区域（带滚动条，高度≤550） ===
         basic_info_scroll = QScrollArea()
         basic_info_scroll.setWidgetResizable(True)
-        basic_info_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        basic_info_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        basic_info_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        basic_info_scroll.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
         basic_info_scroll.setMaximumHeight(550)  # 关键：限制基本信息区域最大高度
 
         # 基本信息内容区域
@@ -144,7 +148,7 @@ class CharacterDetailDialog(QDialog):
 
         avatar_label = QLabel()
         avatar_label.setFixedSize(264, 350)  # 固定头像尺寸
-        avatar_label.setAlignment(Qt.AlignCenter)
+        avatar_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         avatar_path = None
         if self.character.get("avatar"):
             # 使用resource_path处理头像路径
@@ -154,7 +158,10 @@ class CharacterDetailDialog(QDialog):
             pixmap = QPixmap(avatar_path)
             if not pixmap.isNull():  # 检查图片是否有效
                 scaled_pixmap = pixmap.scaled(
-                    264, 350, Qt.KeepAspectRatio, Qt.SmoothTransformation
+                    264,
+                    350,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
                 )
                 avatar_label.setPixmap(scaled_pixmap)
             else:
@@ -165,7 +172,7 @@ class CharacterDetailDialog(QDialog):
             avatar_label.setText("无头像")
             avatar_label.setStyleSheet("color: #666;")
 
-        avatar_layout.addWidget(avatar_label, alignment=Qt.AlignCenter)
+        avatar_layout.addWidget(avatar_label, alignment=Qt.AlignmentFlag.AlignCenter)
         basic_info_layout.addWidget(avatar_frame)
 
         # 标签信息区域
@@ -186,13 +193,13 @@ class CharacterDetailDialog(QDialog):
             value = self.character.get(key, "未知")
             label = QLabel(f"<b>{title}：</b> {value}")
             if key == "name":
-                label.setFont(QFont("Arial", 12, QFont.Bold))
+                label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
             labels_layout.addWidget(label)
 
         # 添加分隔线
         line = QFrame()
-        line.setFrameShape(QFrame.HLine)
-        line.setFrameShadow(QFrame.Sunken)
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
         labels_layout.addWidget(line)
 
         basic_info_layout.addWidget(labels_frame, 1)  # 占据剩余空间

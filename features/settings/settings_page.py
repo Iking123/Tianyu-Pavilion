@@ -1,7 +1,7 @@
 import sys
 import os
 import subprocess
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -16,8 +16,8 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QApplication,
 )
-from PyQt5.QtGui import QIcon, QFont, QDoubleValidator, QIntValidator
-from PyQt5.QtCore import Qt, QTimer
+from PyQt6.QtGui import QIcon, QFont, QDoubleValidator, QIntValidator
+from PyQt6.QtCore import Qt, QTimer
 from core.config_manager import *
 from ui.components import GoBackButton
 
@@ -47,22 +47,24 @@ class SettingsPage(QWidget):
 
         # 页面标题
         title_label = QLabel("设置")
-        title_label.setFont(QFont("Arial", 22, QFont.Bold))
+        title_label.setFont(QFont("Arial", 22, QFont.Weight.Bold))
         title_label.setStyleSheet("color: #2C3E50;")
 
         # 获取返回按钮的宽度作为占位宽度
         button_width = self.back_button.sizeHint().width()
 
-        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
+        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignmentFlag.AlignLeft)
         toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         )
-        toolbar_layout.addWidget(title_label, alignment=Qt.AlignCenter)
+        toolbar_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
         toolbar_layout.addSpacerItem(
-            QSpacerItem(button_width, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+            QSpacerItem(
+                button_width, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum
+            )
         )
         toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         )
 
         layout.addWidget(toolbar)
@@ -149,7 +151,7 @@ class SettingsPage(QWidget):
 
         # 保存按钮（修改为"保存"）
         save_btn = QPushButton("保存")
-        save_btn.setFont(QFont("Microsoft Yahei", 12, QFont.Bold))
+        save_btn.setFont(QFont("Microsoft Yahei", 12, QFont.Weight.Bold))
         save_btn.setStyleSheet(
             """
             QPushButton {
@@ -163,7 +165,7 @@ class SettingsPage(QWidget):
             }
         """
         )
-        layout.addWidget(save_btn, 0, Qt.AlignRight)
+        layout.addWidget(save_btn, 0, Qt.AlignmentFlag.AlignRight)
 
         # 连接信号
         save_btn.clicked.connect(self.save_settings)
@@ -184,10 +186,10 @@ class SettingsPage(QWidget):
             self,
             "确认保存",
             message,
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
         )
-        if reply != QMessageBox.Yes:
+        if reply != QMessageBox.StandardButton.Yes:
             return  # 用户取消
 
         # 获取输入值

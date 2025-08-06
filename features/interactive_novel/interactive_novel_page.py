@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -20,8 +20,8 @@ from PyQt5.QtWidgets import (
     QCheckBox,
     QTextEdit,
 )
-from PyQt5.QtGui import QIcon, QFont
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QIcon, QFont
+from PyQt6.QtCore import Qt, pyqtSignal
 from core.fiction_manager import (
     get_all_fictions,
     save_fiction,
@@ -161,21 +161,23 @@ class InteractiveNovelPage(QWidget):
 
         # 标题
         title_label = QLabel("交互小说")
-        title_label.setFont(QFont("Arial", 22, QFont.Bold))
+        title_label.setFont(QFont("Arial", 22, QFont.Weight.Bold))
         title_label.setStyleSheet("color: #2C3E50;")
 
         # 居中布局
         button_width = self.back_button.width()
-        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
+        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignmentFlag.AlignLeft)
         toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         )
-        toolbar_layout.addWidget(title_label, alignment=Qt.AlignCenter)
+        toolbar_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
         toolbar_layout.addSpacerItem(
-            QSpacerItem(button_width, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+            QSpacerItem(
+                button_width, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum
+            )
         )
         toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         )
         main_layout.addWidget(toolbar)
 
@@ -216,7 +218,7 @@ class InteractiveNovelPage(QWidget):
             font-weight: bold;
         """
         )
-        self.mode_label.setAlignment(Qt.AlignCenter)
+        self.mode_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(self.mode_label)
 
         # === 小说列表区域 ===
@@ -226,7 +228,7 @@ class InteractiveNovelPage(QWidget):
 
         # 小说列表标题
         list_title = QLabel("小说列表")
-        list_title.setFont(QFont("Arial", 14, QFont.Bold))
+        list_title.setFont(QFont("Arial", 14, QFont.Weight.Bold))
         list_title.setStyleSheet("color: #2C3E50; margin-bottom: 10px;")
         list_layout.addWidget(list_title)
 
@@ -286,7 +288,7 @@ class InteractiveNovelPage(QWidget):
                 text-align: center;
             """
             )
-            no_fic_label.setAlignment(Qt.AlignCenter)
+            no_fic_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.fiction_layout.addWidget(no_fic_label)
             return
 
@@ -379,7 +381,7 @@ class InteractiveNovelPage(QWidget):
     def start_fiction(self, fiction):
         """启动小说"""
         dialog = FictionStartDialog(self, fiction["id"], fiction["name"])
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             # 获取选择的角色
             selected_characters = dialog.selected_characters
 
@@ -409,13 +411,13 @@ class InteractiveNovelPage(QWidget):
     def add_new_fiction(self):
         """添加新小说"""
         dialog = FictionEditDialog(self, self.names)
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             self.load_fictions()
 
     def edit_fiction(self, fiction):
         """编辑小说"""
         dialog = FictionEditDialog(self, self.names, fiction)
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             self.load_fictions()
 
     def delete_fiction(self, fiction):
@@ -426,11 +428,11 @@ class InteractiveNovelPage(QWidget):
             self,
             "确认删除",
             f"确定要删除小说 '{fic_name}' 吗？此操作不可撤销。",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
         )
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             if delete_fiction(fiction["id"]):
                 self.load_fictions()
             else:

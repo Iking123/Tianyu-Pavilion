@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QPushButton, QTextBrowser
-from PyQt5.QtGui import QIcon, QPixmap, QPainter, QPainterPath, QPen
-from PyQt5.QtCore import QSize, Qt, QEvent
+from PyQt6.QtWidgets import QPushButton, QTextBrowser
+from PyQt6.QtGui import QIcon, QPixmap, QPainter, QPainterPath, QPen
+from PyQt6.QtCore import QSize, Qt, QEvent
 from funcs import resource_path
 
 
@@ -120,11 +120,11 @@ class SendButton(QPushButton):
         """创建自定义箭头图标"""
         # 创建 QPixmap 作为画布
         pixmap = QPixmap(64, 64)
-        pixmap.fill(Qt.transparent)  # 透明背景
+        pixmap.fill(Qt.GlobalColor.transparent)  # 透明背景
 
         # 创建画笔
         painter = QPainter(pixmap)
-        painter.setRenderHint(QPainter.Antialiasing)  # 抗锯齿
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)  # 抗锯齿
 
         # 创建箭头路径
         path = QPainterPath()
@@ -143,12 +143,12 @@ class SendButton(QPushButton):
         path.lineTo(offset_x + 10 * scale, offset_y - 5 * scale)  # 右侧点
 
         # 设置画笔样式（这是关键修改！）
-        pen = QPen(Qt.white)  # 白色线条
+        pen = QPen(Qt.GlobalColor.white)  # 白色线条
         pen.setWidth(4)  # 设置线宽
         painter.setPen(pen)  # 应用画笔
 
         # 不需要填充（移除原有的填充设置）
-        painter.setBrush(Qt.NoBrush)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
 
         # 绘制路径
         painter.drawPath(path)
@@ -164,7 +164,7 @@ class SendButton(QPushButton):
 
 
 class CustomTextBrowser(QTextBrowser):
-    def __init__(self, parent=None, tp=Qt.IBeamCursor):
+    def __init__(self, parent=None, tp=Qt.CursorShape.IBeamCursor):
         super().__init__(parent)
         self.tp = tp
         self.viewport().setCursor(tp)
@@ -175,7 +175,7 @@ class CustomTextBrowser(QTextBrowser):
         # 仅处理视口的鼠标移动事件
         if (
             obj == self.viewport()
-            and event.type() == QEvent.MouseMove
+            and event.type() == QEvent.Type.MouseMove
             and self.cursor().shape() != self.tp
         ):
             # 获取鼠标位置对应的文本光标

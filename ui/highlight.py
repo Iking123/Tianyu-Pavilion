@@ -1,5 +1,5 @@
-from PyQt5.QtCore import Qt, QRegExp
-from PyQt5.QtGui import QTextCharFormat, QSyntaxHighlighter, QBrush, QColor
+from PyQt6.QtCore import Qt, QRegularExpression
+from PyQt6.QtGui import QTextCharFormat, QSyntaxHighlighter, QBrush, QColor
 
 
 class SearchHighlighter(QSyntaxHighlighter):
@@ -23,7 +23,7 @@ class SearchHighlighter(QSyntaxHighlighter):
             return
 
         # 不区分大小写的搜索
-        regex = QRegExp(self.search_term, Qt.CaseInsensitive)
+        regex = QRegularExpression(self.search_term, Qt.CaseSensitivity.CaseInsensitive)
         index = regex.indexIn(text)
 
         while index >= 0:

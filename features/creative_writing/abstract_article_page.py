@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -8,22 +8,21 @@ from PyQt5.QtWidgets import (
     QSpacerItem,
     QSizePolicy,
     QLineEdit,
-    QTextEdit,
     QMessageBox,
 )
-from PyQt5.QtGui import QTextCursor, QFont
-from PyQt5.QtCore import Qt
+from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt
 from ui.components import GoBackButton, RestartButton
-from ui.qtext_message_widget import MessageWidget
 from ui.message_display import MessageDisplayArea
 from ui.my_slider import MySlider
 from .bullshit import BullshitWorker
+from ui.main_window import MainWindow
 
 
 class AbstractArticlePage(QWidget):
     """抽象作文页面"""
 
-    def __init__(self, main_window=None):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         self.main_window = main_window
 
@@ -44,21 +43,25 @@ class AbstractArticlePage(QWidget):
 
         # 页面标题
         title_label = QLabel("抽象作文生成器")
-        title_label.setFont(QFont("Arial", 22, QFont.Bold))
+        title_label.setFont(QFont("Arial", 22, QFont.Weight.Bold))
         title_label.setStyleSheet("color: #2C3E50;")
 
         button_width = self.back_button.width() + 10 + self.restart_button.width()
-        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
-        toolbar_layout.addWidget(self.restart_button, alignment=Qt.AlignLeft)
-        toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        )
-        toolbar_layout.addWidget(title_label, alignment=Qt.AlignCenter)
-        toolbar_layout.addSpacerItem(
-            QSpacerItem(button_width, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        toolbar_layout.addWidget(
+            self.restart_button, alignment=Qt.AlignmentFlag.AlignLeft
         )
         toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        )
+        toolbar_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        toolbar_layout.addSpacerItem(
+            QSpacerItem(
+                button_width, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum
+            )
+        )
+        toolbar_layout.addSpacerItem(
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         )
         layout.addWidget(toolbar)
 
@@ -125,9 +128,11 @@ class AbstractArticlePage(QWidget):
             return
         length = self.length_input.value
         self.worker = BullshitWorker(prompt, length)
-        self.worker.update_signal.connect(self.add_message_content, Qt.QueuedConnection)
+        self.worker.update_signal.connect(
+            self.add_message_content, Qt.ConnectionType.QueuedConnection
+        )
         self.worker.status_signal.connect(
-            self.main_window.set_status, Qt.QueuedConnection
+            self.main_window.set_status, Qt.ConnectionType.QueuedConnection
         )
         self.output_message = self.output_layout.add_message_by_role(
             "", f"# {prompt}\r\n"
@@ -149,12 +154,12 @@ class AbstractArticlePage(QWidget):
             self,
             "确认重来",
             "即将清除已有作文并恢复初始作文设置，确定执行吗？",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
         )
 
         # 如果用户选择否，则取消操作
-        if reply == QMessageBox.No:
+        if reply == QMessageBox.StandardButton.No:
             # 使用主窗口设置状态
             if self.main_window:
                 self.main_window.set_status("重来操作已取消")
@@ -174,3 +179,5 @@ class AbstractArticlePage(QWidget):
         output_label = QLabel("生成结果：")
         output_label.setStyleSheet("font-size: 16pt; margin-bottom: 5px;")
         self.output_layout.container_layout.addWidget(output_label)
+        if self.main_window:
+            self.main_window.set_status("就绪")

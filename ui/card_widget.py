@@ -1,6 +1,6 @@
-from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QLabel, QVBoxLayout
-from PyQt5.QtGui import QFont, QPixmap
+from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QLabel, QVBoxLayout
+from PyQt6.QtGui import QFont, QPixmap
 
 
 class CardWidget(QFrame):
@@ -11,7 +11,7 @@ class CardWidget(QFrame):
     def __init__(self, title, description, icon_path=None, min_height=120, parent=None):
         super().__init__(parent)
         self.setMinimumHeight(min_height)
-        self.setCursor(Qt.PointingHandCursor)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.title = title
         self.description = description
         self.icon_path = icon_path
@@ -46,10 +46,10 @@ class CardWidget(QFrame):
             pixmap = QPixmap(self.icon_path)
             if not pixmap.isNull():
                 scaled_pixmap = pixmap.scaledToHeight(
-                    fixed_height, Qt.SmoothTransformation
+                    fixed_height, Qt.TransformationMode.SmoothTransformation
                 )
                 icon_label.setPixmap(scaled_pixmap)
-                icon_label.setAlignment(Qt.AlignCenter)
+                icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
             layout.addWidget(icon_label)
 
@@ -60,7 +60,7 @@ class CardWidget(QFrame):
 
         # 标题
         title_label = QLabel(self.title)
-        title_label.setFont(QFont("Arial", 14, QFont.Bold))
+        title_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
         title_label.setStyleSheet("color: #2C3E50;")
         info_layout.addWidget(title_label)
 
@@ -75,7 +75,7 @@ class CardWidget(QFrame):
 
     def mousePressEvent(self, event):
         """鼠标点击事件"""
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.clicked.emit()
         super().mousePressEvent(event)
 

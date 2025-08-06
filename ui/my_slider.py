@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QApplication,
     QWidget,
     QVBoxLayout,
@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QHBoxLayout,
 )
-from PyQt5.QtCore import Qt
+from PyQt6.QtCore import Qt
 
 
 class MySlider(QWidget):
@@ -31,11 +31,11 @@ class MySlider(QWidget):
         main_layout = QVBoxLayout()
 
         # 创建滑动条
-        self.slider = QSlider(Qt.Horizontal)
+        self.slider = QSlider(Qt.Orientation.Horizontal)
         self.slider.setRange(l, r)  # 设置范围为
         self.slider.setSingleStep(single)  # 每次移动步长
         self.slider.setPageStep(page)  # 键盘翻页步长
-        self.slider.setTickPosition(QSlider.TicksBelow)  # 刻度在下方
+        self.slider.setTickPosition(QSlider.TickPosition.TicksBelow)  # 刻度在下方
         self.slider.setTickInterval(itv)
         self.slider.setStyleSheet(
             """
@@ -67,7 +67,7 @@ class MySlider(QWidget):
         self.value = ini
         # 创建显示标签
         self.value_label = QLabel(f"{ini}{after}")
-        self.value_label.setAlignment(Qt.AlignCenter)
+        self.value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.value_label.setStyleSheet(f"font-size: {fs}pt; font-weight: bold;")
 
         # 创建带标题的水平布局
@@ -100,4 +100,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     ex = MySlider()
     ex.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

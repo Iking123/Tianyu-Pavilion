@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -8,18 +8,19 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
     QSpacerItem,
 )
-from PyQt5.QtGui import QFont
-from PyQt5.QtCore import Qt
+from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt
 from ui.components import GoBackButton, RestartButton
 from ui.message_display import MessageDisplayArea
 from ui.input_panel import InputPanel
 from core.config_manager import get_assist
+from ui.main_window import MainWindow
 
 
 class IdiomSolitairePage(QWidget):
     """成语接龙游戏页面"""
 
-    def __init__(self, main_window=None):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         self.main_window = main_window
         self.game_history = []
@@ -45,22 +46,26 @@ class IdiomSolitairePage(QWidget):
 
         # 页面标题
         title_label = QLabel("成语接龙")
-        title_label.setFont(QFont("Arial", 16, QFont.Bold))
+        title_label.setFont(QFont("Arial", 16, QFont.Weight.Bold))
         title_label.setStyleSheet("color: #2C3E50;")
 
         # 居中布局
         button_width = self.back_button.width() + 10 + self.restart_button.width()
-        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
-        toolbar_layout.addWidget(self.restart_button, alignment=Qt.AlignLeft)
-        toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        )
-        toolbar_layout.addWidget(title_label, alignment=Qt.AlignCenter)
-        toolbar_layout.addSpacerItem(
-            QSpacerItem(button_width, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        toolbar_layout.addWidget(
+            self.restart_button, alignment=Qt.AlignmentFlag.AlignLeft
         )
         toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        )
+        toolbar_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        toolbar_layout.addSpacerItem(
+            QSpacerItem(
+                button_width, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum
+            )
+        )
+        toolbar_layout.addSpacerItem(
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         )
         layout.addWidget(toolbar)
 
@@ -112,7 +117,7 @@ class IdiomSolitairePage(QWidget):
 
         # 分隔线
         separator = QFrame()
-        separator.setFrameShape(QFrame.HLine)
+        separator.setFrameShape(QFrame.Shape.HLine)
         separator.setStyleSheet("color: #E0E0E0;")
         game_layout.addWidget(separator)
 
@@ -140,7 +145,7 @@ class IdiomSolitairePage(QWidget):
         info_layout = QVBoxLayout(info_frame)
 
         info_label = QLabel("<b>游戏信息</b>")
-        info_label.setFont(QFont("Microsoft Yahei", 14, QFont.Bold))
+        info_label.setFont(QFont("Microsoft Yahei", 14, QFont.Weight.Bold))
         info_layout.addWidget(info_label)
 
         # 历史记录
@@ -154,7 +159,7 @@ class IdiomSolitairePage(QWidget):
 
         self.history_container = QWidget()
         self.history_layout = QVBoxLayout(self.history_container)
-        self.history_layout.setAlignment(Qt.AlignTop)
+        self.history_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         self.history_scroll.setWidget(self.history_container)
         info_layout.addWidget(self.history_scroll, 1)
@@ -208,7 +213,7 @@ class IdiomSolitairePage(QWidget):
         self.current_idiom = ""
         self.current_idiom_label.setText("游戏即将开始...")
 
-    def handle_player_input(self, text):
+    def handle_player_input(self, text: str):
         """处理玩家输入"""
         if not self.game_active:
             return
@@ -283,7 +288,7 @@ class IdiomSolitairePage(QWidget):
 
     def call_idiom_api(self, system_prompt):
         """调用DeepSeek API获取成语接龙响应"""
-        from PyQt5.QtCore import QThread
+        from PyQt6.QtCore import QThread
         from .idiom_worker import IdiomWorker
 
         # 创建并启动工作线程
@@ -313,7 +318,7 @@ class IdiomSolitairePage(QWidget):
                 )
             self.current_assistant_message.append_content(new_content)
 
-    def handle_ai_response(self, response):
+    def handle_ai_response(self, response: dict):
         """处理AI的JSON响应"""
         try:
             # 解析JSON响应

@@ -1,18 +1,15 @@
 import os
 import sys
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QGridLayout,
     QPushButton,
     QLabel,
-    QSizePolicy,
-    QHBoxLayout,
-    QFrame,
     QGraphicsDropShadowEffect,
 )
-from PyQt5.QtGui import QFont, QColor, QFontDatabase
-from PyQt5.QtCore import Qt, QPoint, QPropertyAnimation, QEasingCurve
+from PyQt6.QtGui import QFont, QColor
+from PyQt6.QtCore import Qt, QPoint, QPropertyAnimation, QEasingCurve
 from funcs import resource_path
 
 
@@ -36,8 +33,8 @@ class HomePage(QWidget):
         # 标题区域
         title_layout = QVBoxLayout()
         title_label = QLabel("天语阁")
-        title_label.setFont(QFont("DFPShaoNvW5-GB", 48, QFont.Bold))
-        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setFont(QFont("DFPShaoNvW5-GB", 48, QFont.Weight.Bold))
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         # 添加 !important 和显式 font-family，避免被main.py中的全局样式表覆盖
         title_label.setStyleSheet(
             f"color: #2C3E50 !important; margin-bottom: 10px; font-family: 'DFPShaoNvW5-GB' !important;"
@@ -45,7 +42,7 @@ class HomePage(QWidget):
 
         subtitle_label = QLabel("Created by Iking")
         subtitle_label.setFont(QFont(".Heiti J", 20))
-        subtitle_label.setAlignment(Qt.AlignCenter)
+        subtitle_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subtitle_label.setStyleSheet(
             f"color: #7f8c8d; margin-bottom: 40px; font-family: '.Heiti J' !important;"
         )
@@ -75,7 +72,7 @@ class HomePage(QWidget):
         # 中央按钮区域布局
         central_layout = QVBoxLayout()
         central_layout.setSpacing(20)
-        central_layout.setAlignment(Qt.AlignCenter)
+        central_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # 角色编辑器按钮
         self.character_btn = self.create_circle_button("角色编辑器", "#8F97BB")
@@ -171,7 +168,7 @@ class HomePage(QWidget):
         """创建带阴影的圆形按钮"""
         button = QPushButton()  # 只用图标，不要显示字！
         button.setFixedSize(200, 200)  # 稍微缩小以适应两个按钮
-        button.setFont(QFont("Microsoft YaHei", 14, QFont.Bold))
+        button.setFont(QFont("Microsoft YaHei", 14, QFont.Weight.Bold))
 
         # 根据按钮类型设置不同的背景图片
         if text == "设置":
@@ -246,7 +243,7 @@ class HomePage(QWidget):
                 pos_animation.setDuration(200)
                 pos_animation.setStartValue(b.original_pos)
                 pos_animation.setEndValue(b.original_pos - QPoint(0, 5))
-                pos_animation.setEasingCurve(QEasingCurve.OutBack)
+                pos_animation.setEasingCurve(QEasingCurve.Type.OutBack)
                 pos_animation.start()
 
                 # 增加阴影效果
@@ -269,7 +266,7 @@ class HomePage(QWidget):
                 pos_animation.setDuration(200)
                 pos_animation.setStartValue(b.pos())
                 pos_animation.setEndValue(b.original_pos)
-                pos_animation.setEasingCurve(QEasingCurve.OutBack)
+                pos_animation.setEasingCurve(QEasingCurve.Type.OutBack)
                 pos_animation.start()
 
                 # 恢复阴影效果

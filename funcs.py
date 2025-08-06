@@ -1,12 +1,12 @@
 import inspect
-from PyQt5.QtGui import QIcon, QPixmap, QPainter, QPainterPath
-from PyQt5.QtCore import Qt, pyqtSlot, QTimer
+from PyQt6.QtGui import QIcon, QPixmap, QPainter, QPainterPath
+from PyQt6.QtCore import Qt, pyqtSlot, QTimer
 import sys
 import os
 import json
 
 
-def case_insensitive_find(s, sub, start=None, end=None):
+def case_insensitive_find(s: str, sub: str, start=None, end=None):
     """不区分大小写的查找"""
     s_lower = s.lower()
     sub_lower = sub.lower()
@@ -38,7 +38,7 @@ def execute_repeatedly(func):
 
 
 def is_deleted(obj):
-    """判断 Qt 对象是否已被销毁（PyQt5专用版）"""
+    """判断 Qt 对象是否已被销毁"""
     try:
         # 尝试访问一个简单属性（如objectName）来触发有效性检查
         _ = obj.objectName()  # 如果对象已被删除，这里会抛出 RuntimeError
@@ -147,11 +147,11 @@ def create_circular_icon(icon_path):
 
     # 创建透明画布
     result = QPixmap(pixmap.size())
-    result.fill(Qt.transparent)
+    result.fill(Qt.GlobalColor.transparent)
 
     # 设置圆形蒙版
     painter = QPainter(result)
-    painter.setRenderHint(QPainter.Antialiasing)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
     # 创建圆形路径 (顶着上边界+水平居中)
     diameter = min(pixmap.width(), pixmap.height())

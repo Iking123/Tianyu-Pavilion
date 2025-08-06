@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -8,8 +8,8 @@ from PyQt5.QtWidgets import (
     QLabel,
     QFrame,
 )
-from PyQt5.QtGui import QFont
-from PyQt5.QtCore import Qt, QTimer, QEvent
+from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt, QTimer, QEvent
 from .styles import INPUT_STYLE, BUTTON_STYLES
 from ui.components import SendButton
 
@@ -26,7 +26,9 @@ class CustomTextEdit(QTextEdit):
         # 初始化字符计数标签
         if threshold:
             self.count_label = QLabel(self)
-            self.count_label.setAlignment(Qt.AlignRight | Qt.AlignBottom)
+            self.count_label.setAlignment(
+                Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom
+            )
             self.count_label.setStyleSheet("color: gray; background: transparent;")
             self.update_count_label()
             self.textChanged.connect(self.limit_length)
@@ -81,9 +83,15 @@ class CustomTextEdit(QTextEdit):
     def keyPressEvent(self, event):
         """处理按键事件"""
         if (
-            event.key() == Qt.Key_Return
+            event.key() == Qt.Key.Key_Return
             and self.parent_panel
-            and not (event.modifiers() & (Qt.ControlModifier | Qt.ShiftModifier))
+            and not (
+                event.modifiers()
+                & (
+                    Qt.KeyboardModifier.ControlModifier
+                    | Qt.KeyboardModifier.ShiftModifier
+                )
+            )
         ):
             self.parent_panel.on_send_clicked()
             event.accept()

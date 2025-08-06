@@ -1,26 +1,23 @@
-from PyQt5.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QSplitter,
-    QSizePolicy,
-    QMessageBox,
-)
-from PyQt5.QtCore import Qt, QTimer, QObject
-from PyQt5.QtGui import QFont
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QSplitter, QMessageBox
+from PyQt6.QtCore import Qt, QTimer
 from core.worker import Worker
 from core.config_manager import *
 from ui.styles import *
 from ui.search_toolbar import SearchToolbar
 from ui.message_display import MessageDisplayArea
 from ui.input_panel import InputPanel  # 导入新的输入面板组件
+from ui.main_window import MainWindow
 
 
 class ChatComponent(QWidget):
     """聊天功能组件，修复流式回复问题"""
 
     def __init__(
-        self, main_window=None, ini_msg=True, placeholder="输入消息...", threshold=None
+        self,
+        main_window: MainWindow,
+        ini_msg=True,
+        placeholder="输入消息...",
+        threshold=None,
     ):
         super().__init__()
         self.main_window = main_window
@@ -50,7 +47,7 @@ class ChatComponent(QWidget):
         main_layout.addWidget(self.search_toolbar)
 
         # 创建分割器
-        splitter = QSplitter(Qt.Vertical)
+        splitter = QSplitter(Qt.Orientation.Vertical)
 
         # 使用新的消息显示区域组件
         self.message_display = MessageDisplayArea()
@@ -159,16 +156,24 @@ class ChatComponent(QWidget):
         self.worker = Worker(message, self.conversation_history)
 
         # 使用队列连接确保线程安全
-        self.worker.start_thinking.connect(self.start_thinking, Qt.QueuedConnection)
-        self.worker.start_replying.connect(self.start_replying, Qt.QueuedConnection)
-        self.worker.update_signal.connect(self.add_message_content, Qt.QueuedConnection)
+        self.worker.start_thinking.connect(
+            self.start_thinking, Qt.ConnectionType.QueuedConnection
+        )
+        self.worker.start_replying.connect(
+            self.start_replying, Qt.ConnectionType.QueuedConnection
+        )
+        self.worker.update_signal.connect(
+            self.add_message_content, Qt.ConnectionType.QueuedConnection
+        )
         self.worker.status_signal.connect(
-            self.main_window.set_status, Qt.QueuedConnection
+            self.main_window.set_status, Qt.ConnectionType.QueuedConnection
         )
         self.worker.search_complete.connect(
-            self.message_display.add_search_result, Qt.QueuedConnection
+            self.message_display.add_search_result, Qt.ConnectionType.QueuedConnection
         )
-        self.worker.finished.connect(self.on_worker_finished, Qt.QueuedConnection)
+        self.worker.finished.connect(
+            self.on_worker_finished, Qt.ConnectionType.QueuedConnection
+        )
 
         self.worker.start()
 
@@ -232,12 +237,12 @@ class ChatComponent(QWidget):
                 self,
                 "确认重来",
                 "即将清除对话历史并开启新对话，确定执行吗？",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
             )
 
             # 如果用户选择否，则取消操作
-            if reply == QMessageBox.No:
+            if reply == QMessageBox.StandardButton.No:
                 # 使用主窗口设置状态
                 if self.main_window:
                     self.main_window.set_status("重来操作已取消")
@@ -271,13 +276,16 @@ class ChatComponent(QWidget):
 
     def keyPressEvent(self, event):
         """处理键盘快捷键"""
-        if event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_F:
+        if (
+            event.modifiers() == Qt.KeyboardModifier.ControlModifier
+            and event.key() == Qt.Key.Key_F
+        ):
             self.toggle_search_toolbar()
             return
-        elif event.key() == Qt.Key_Escape and self.search_toolbar.isVisible():
+        elif event.key() == Qt.Key.Key_Escape and self.search_toolbar.isVisible():
             self.close_search()
             return
-        elif event.key() == Qt.Key_Enter or event.key() == Qt.Key_Return:
+        elif event.key() == Qt.Key.Key_Enter or event.key() == Qt.Key.Key_Return:
             if self.search_toolbar.search_input.hasFocus():
                 self.search_next()
                 return

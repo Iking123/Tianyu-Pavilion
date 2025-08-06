@@ -1,19 +1,18 @@
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
-    QPushButton,
     QLabel,
     QSpacerItem,
     QSizePolicy,
     QScrollArea,
-    QFrame,
 )
-from PyQt5.QtGui import QIcon, QFont, QPixmap, QColor
-from PyQt5.QtCore import Qt, QSize, pyqtSignal
+from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt
 from funcs import resource_path
 from ui.card_widget import CardWidget
 from ui.components import GoBackButton
+from ui.main_window import MainWindow
 
 
 class GameCard(CardWidget):
@@ -26,14 +25,14 @@ class GameCard(CardWidget):
     def mousePressEvent(self, event):
         """重写鼠标点击事件，添加自定义处理"""
         super().mousePressEvent(event)
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.click_handler()
 
 
 class GamePage(QWidget):
     """小游戏功能页面"""
 
-    def __init__(self, main_window=None):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         self.main_window = main_window
 
@@ -53,22 +52,24 @@ class GamePage(QWidget):
 
         # 页面标题
         title_label = QLabel("小游戏")
-        title_label.setFont(QFont("Arial", 22, QFont.Bold))
+        title_label.setFont(QFont("Arial", 22, QFont.Weight.Bold))
         title_label.setStyleSheet("color: #2C3E50;")
 
         # 获取返回按钮的宽度作为占位宽度
         button_width = self.back_button.width()
 
-        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
+        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignmentFlag.AlignLeft)
         toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         )
-        toolbar_layout.addWidget(title_label, alignment=Qt.AlignCenter)
+        toolbar_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
         toolbar_layout.addSpacerItem(
-            QSpacerItem(button_width, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+            QSpacerItem(
+                button_width, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum
+            )
         )
         toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         )
 
         layout.addWidget(toolbar)
@@ -85,9 +86,9 @@ class GamePage(QWidget):
 
         # 标题
         games_title = QLabel("选择一个小游戏")
-        games_title.setFont(QFont("Arial", 18, QFont.Bold))
+        games_title.setFont(QFont("Arial", 18, QFont.Weight.Bold))
         games_title.setStyleSheet("color: #2C3E50; margin-bottom: 20px;")
-        games_title.setAlignment(Qt.AlignCenter)
+        games_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         container_layout.addWidget(games_title)
 
         # 游戏卡片容器 - 使用垂直布局

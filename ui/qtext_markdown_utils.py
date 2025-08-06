@@ -13,7 +13,7 @@ from markdown.extensions.fenced_code import FencedCodeExtension
 from markdown.extensions.tables import TableExtension
 from .markdown_extensions import HighlightCodeExtension
 from bs4 import BeautifulSoup
-from PyQt5.QtCore import QUrl
+from PyQt6.QtCore import QUrl
 import numpy as np
 
 # 创建缓存目录

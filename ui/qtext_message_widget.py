@@ -1,5 +1,5 @@
 import html
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QLabel,
@@ -7,9 +7,9 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
     QHBoxLayout,
 )
-from PyQt5.QtGui import QFont, QTextCursor, QDesktopServices
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QEvent
-from PyQt5.QtNetwork import QNetworkReply
+from PyQt6.QtGui import QFont, QTextCursor, QDesktopServices
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QEvent
+from PyQt6.QtNetwork import QNetworkReply
 import time
 
 from ui.components import CustomTextBrowser
@@ -35,11 +35,11 @@ class MessageWidget(QWidget):
         self.is_thinking = is_thinking  # 标识是否是思考内容
         self.auto_scroll = auto_scroll
         # 设置大小策略 - 水平扩展，垂直固定
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         layout = QVBoxLayout()
         layout.setContentsMargins(5, 0, 5, 0)
-        layout.setAlignment(Qt.AlignTop)  # 顶部对齐
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)  # 顶部对齐
 
         # 使用自定义 CustomTextBrowser
         self.content_browser = CustomTextBrowser()
@@ -48,11 +48,17 @@ class MessageWidget(QWidget):
         self.content_browser.anchorClicked.connect(self.handle_link_click)
 
         # 禁用所有滚动条
-        self.content_browser.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.content_browser.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.content_browser.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.content_browser.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
 
         # 设置大小策略
-        self.content_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.content_browser.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
 
         # 设置最小宽度和固定高度
         self.content_browser.setMinimumWidth(600)
@@ -64,16 +70,18 @@ class MessageWidget(QWidget):
         # 为选项消息添加点击事件支持
         if role == "option":
             # 设置鼠标悬停样式
-            self.content_browser.tp = Qt.PointingHandCursor
-            self.content_browser.setCursor(Qt.PointingHandCursor)
-            self.content_browser.viewport().setCursor(Qt.PointingHandCursor)
+            self.content_browser.tp = Qt.CursorShape.PointingHandCursor
+            self.content_browser.setCursor(Qt.CursorShape.PointingHandCursor)
+            self.content_browser.viewport().setCursor(Qt.CursorShape.PointingHandCursor)
         else:
             # 如果不是选项，也不是旁白（即role不为空），则考虑角色标签与头像：
             if role:
                 # 创建头像容器
                 avatar_widget = QWidget()
                 avatar_layout = QHBoxLayout(avatar_widget)
-                avatar_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+                avatar_layout.setAlignment(
+                    Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft
+                )
                 avatar_layout.setContentsMargins(0, 0, 10, 0)  # 右边距10px
 
                 # 尝试获取角色头像
@@ -184,8 +192,8 @@ class MessageWidget(QWidget):
     def eventFilter(self, obj, event):
         """处理复制按钮和选项消息点击"""
         if (
-            event.type() == QEvent.MouseButtonRelease
-            and event.button() == Qt.LeftButton
+            event.type() == QEvent.Type.MouseButtonRelease
+            and event.button() == Qt.MouseButton.LeftButton
         ):
             if obj is self.content_browser.viewport():
                 pos = event.pos()
@@ -230,7 +238,7 @@ class MessageWidget(QWidget):
         url = reply.url().toString()
         if "latex.codecogs.com" in url:
             error = reply.error()
-            if error == QNetworkReply.NoError:
+            if error == QNetworkReply.NetworkError.NoError:
                 print(f"公式图片加载成功: {url}")
             else:
                 print(f"公式图片加载失败: {url}, 错误: {reply.errorString()}")
@@ -261,7 +269,7 @@ class MessageWidget(QWidget):
 
         # 先加一下，以免用户嫌卡顿，但不一定现在渲染
         cursor = self.content_browser.textCursor()
-        cursor.movePosition(cursor.End)
+        cursor.movePosition(cursor.MoveOperation.End)
         html_content = qtext_markdown_utils.markdown_to_html(new_content).strip()
         cursor.insertHtml(html_content)  # 直接将new_content转换后插入HTML片段
         self.content_browser.setTextCursor(cursor)

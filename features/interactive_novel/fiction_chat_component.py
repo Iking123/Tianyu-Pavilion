@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMessageBox
+from PyQt6.QtWidgets import QMessageBox
 from features.chat.chat_component import ChatComponent
 from .fiction_parser import FictionParser
 from core.character_manager import find_character_id

@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -7,20 +7,21 @@ from PyQt5.QtWidgets import (
     QLabel,
     QSpacerItem,
 )
-from PyQt5.QtGui import QIcon, QFont
-from PyQt5.QtCore import Qt
+from PyQt6.QtGui import QIcon, QFont
+from PyQt6.QtCore import Qt
 from ui.components import GoBackButton, RestartButton
 from .fiction_chat_component import FictionChatComponent
 from .fiction_parser import FictionParser
 from core.config_manager import get_assist
 from core.fiction_manager import get_fiction_by_id, format_fiction
 from core.character_manager import format_character, get_character_name
+from ui.main_window import MainWindow
 
 
 class InteractiveFictionPage(QWidget):
     """交互小说页面"""
 
-    def __init__(self, main_window=None, fiction_id=None, character_ids=None):
+    def __init__(self, main_window: MainWindow, fiction_id=None, character_ids=None):
         super().__init__()
         self.main_window = main_window
         self.fiction_id = fiction_id
@@ -63,24 +64,28 @@ class InteractiveFictionPage(QWidget):
             else "未知小说"
         )
         title_label = QLabel(fiction_name)
-        title_label.setFont(QFont("DFPShaoNvW5-GB", 18, QFont.Bold))
+        title_label.setFont(QFont("DFPShaoNvW5-GB", 18, QFont.Weight.Bold))
         title_label.setStyleSheet(
             "color: white; font-family: 'DFPShaoNvW5-GB' !important;"
         )
 
         # 居中布局
         button_width = self.back_button.width() + 10 + self.restart_button.width()
-        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
-        toolbar_layout.addWidget(self.restart_button, alignment=Qt.AlignLeft)
-        toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        )
-        toolbar_layout.addWidget(title_label, alignment=Qt.AlignCenter)
-        toolbar_layout.addSpacerItem(
-            QSpacerItem(button_width, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        toolbar_layout.addWidget(
+            self.restart_button, alignment=Qt.AlignmentFlag.AlignLeft
         )
         toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        )
+        toolbar_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        toolbar_layout.addSpacerItem(
+            QSpacerItem(
+                button_width, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum
+            )
+        )
+        toolbar_layout.addSpacerItem(
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         )
         layout.addWidget(toolbar)
 
@@ -110,10 +115,10 @@ class InteractiveFictionPage(QWidget):
                 self,
                 "确认返回",
                 "是否要返回小说列表？（本次小说将会中止！）",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
             )
-            if reply != QMessageBox.Yes:
+            if reply != QMessageBox.StandardButton.Yes:
                 return  # 用户取消
 
         # 清理资源
@@ -242,17 +247,19 @@ class InteractiveFictionPage(QWidget):
         if not force:
             # 创建确认对话框
             msg_box = QMessageBox(parent=self)
-            msg_box.setIcon(QMessageBox.Question)
+            msg_box.setIcon(QMessageBox.Icon.Question)
             msg_box.setWindowTitle("确认重新开局")
-            msg_box.setTextFormat(Qt.RichText)  # 关键！启用富文本解析
+            msg_box.setTextFormat(Qt.TextFormat.RichText)  # 关键！启用富文本解析
             msg_box.setText(
                 f"即将中止本次小说并令 <b>{get_assist(True)}</b> 重新撰写开局，确定执行吗？"
             )  # 使用<b>标签加粗
-            msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-            reply = msg_box.exec_()
+            msg_box.setStandardButtons(
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            reply = msg_box.exec()
 
             # 如果用户选择否，则取消操作
-            if reply == QMessageBox.No:
+            if reply == QMessageBox.StandardButton.No:
                 # 使用主窗口设置状态
                 if self.main_window:
                     self.main_window.set_status("重来操作已取消")

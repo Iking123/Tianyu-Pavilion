@@ -2,7 +2,7 @@ import re
 import json
 import requests
 import logging
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt6.QtCore import QThread, pyqtSignal
 from core.config_manager import *
 from core.search_utils import baidu_search, tavily_search
 
@@ -164,8 +164,11 @@ class Worker(QThread):
                 has_received_reasoning = False  # 是否收到过思考内容
                 has_started_replying = False  # 是否已开始回复
                 reasoning_content = ""
-
-                for line in self.response.iter_lines():
+                try:
+                    lines = self.response.iter_lines()
+                except:
+                    lines = []
+                for line in lines:
                     if not self.running:
                         break
 

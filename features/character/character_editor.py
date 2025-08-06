@@ -1,5 +1,5 @@
 import threading
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -17,8 +17,8 @@ from PyQt5.QtWidgets import (
     QScrollArea,
     QProgressDialog,
 )
-from PyQt5.QtGui import QIcon, QFont
-from PyQt5.QtCore import Qt
+from PyQt6.QtGui import QIcon, QFont
+from PyQt6.QtCore import Qt
 from core.character_manager import (
     get_all_characters,
     save_character,
@@ -64,21 +64,23 @@ class CharacterEditor(QWidget):
 
         # 标题
         title_label = QLabel("角色编辑器")
-        title_label.setFont(QFont("Arial", 22, QFont.Bold))
+        title_label.setFont(QFont("Arial", 22, QFont.Weight.Bold))
         title_label.setStyleSheet("color: #2C3E50;")
 
         # 这样才能真正居中！
         button_width = self.back_button.width()
-        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
+        toolbar_layout.addWidget(self.back_button, alignment=Qt.AlignmentFlag.AlignLeft)
         toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         )
-        toolbar_layout.addWidget(title_label, alignment=Qt.AlignCenter)
+        toolbar_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
         toolbar_layout.addSpacerItem(
-            QSpacerItem(button_width, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+            QSpacerItem(
+                button_width, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum
+            )
         )
         toolbar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         )
         main_layout.addWidget(toolbar)
 
@@ -125,7 +127,7 @@ class CharacterEditor(QWidget):
             font-weight: bold;
         """
         )
-        self.mode_label.setAlignment(Qt.AlignCenter)
+        self.mode_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(self.mode_label)
 
         # === 角色列表区域 ===
@@ -135,7 +137,7 @@ class CharacterEditor(QWidget):
 
         # 角色列表标题
         list_title = QLabel("角色列表")
-        list_title.setFont(QFont("Arial", 14, QFont.Bold))
+        list_title.setFont(QFont("Arial", 14, QFont.Weight.Bold))
         list_title.setStyleSheet("color: #2C3E50; margin-bottom: 10px;")
         list_layout.addWidget(list_title)
 
@@ -195,7 +197,7 @@ class CharacterEditor(QWidget):
                 text-align: center;
             """
             )
-            no_char_label.setAlignment(Qt.AlignCenter)
+            no_char_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.character_layout.addWidget(no_char_label)
             return
 
@@ -324,7 +326,7 @@ class CharacterEditor(QWidget):
             self,  # 没有取消按钮
         )
         self.progress.setWindowTitle("生成角色摘要")
-        self.progress.setWindowModality(Qt.WindowModal)
+        self.progress.setWindowModality(Qt.WindowModality.WindowModal)
         self.progress.setCancelButton(None)  # 禁用取消按钮
         self.progress.show()
 
@@ -360,18 +362,18 @@ class CharacterEditor(QWidget):
     def show_character_details(self, character):
         """显示角色详情窗口"""
         dialog = CharacterDetailDialog(self, character)
-        dialog.exec_()
+        dialog.exec()
 
     def add_new_character(self):
         """添加新角色"""
         dialog = CharacterEditDialog(self, self.names)
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             self.load_characters()
 
     def edit_character(self, character):
         """编辑角色"""
         dialog = CharacterEditDialog(self, self.names, character)
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             self.load_characters()
 
     def delete_character(self, character):
@@ -382,11 +384,11 @@ class CharacterEditor(QWidget):
             self,
             "确认删除",
             f"确定要删除角色 '{char_name}' 吗？此操作不可撤销。",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
         )
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             if delete_character(character["id"]):
                 self.load_characters()
             else:
@@ -435,6 +437,7 @@ class CharacterEditDialog(QDialog):
                 "酷儿",
                 "武装直升机",
                 "沃尔玛购物袋",
+                "秀吉",
                 "其他",
             ]
         )
@@ -513,7 +516,9 @@ class CharacterEditDialog(QDialog):
         layout.addLayout(form_layout)
 
         # 按钮
-        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)

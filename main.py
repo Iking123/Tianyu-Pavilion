@@ -1,9 +1,8 @@
 import os
 import sys
-from PyQt5.QtWidgets import QApplication, QScrollArea, QScrollBar
-from PyQt5.QtGui import QPalette, QColor, QIcon, QFontDatabase
-from PyQt5.QtCore import QTimer
-from PyQt5.QtNetwork import QNetworkAccessManager
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtGui import QPalette, QColor, QIcon, QFontDatabase
+from PyQt6.QtNetwork import QNetworkAccessManager
 from ui.main_window import MainWindow
 from core.config_manager import get_config
 from ui.styles import APP_STYLESHEET, ENHANCED_SCROLLBAR_STYLE
@@ -12,6 +11,9 @@ from funcs import resource_path
 
 
 def main():
+    os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "0"  # 禁用高DPI缩放
+    os.environ["QT_SCALE_FACTOR"] = "1"  # 强制缩放因子=1
+
     app = QApplication(sys.argv)
 
     # === Windows专属优化 ===
@@ -38,17 +40,17 @@ def main():
     # ⚠️ 重要：先设置调色板，再设置样式表
     # 创建调色板（但不要覆盖滚动条相关的颜色）
     palette = app.palette()
-    palette.setColor(QPalette.Window, QColor(240, 240, 240))
-    palette.setColor(QPalette.WindowText, QColor(50, 50, 50))
-    palette.setColor(QPalette.Base, QColor(255, 255, 255))
-    palette.setColor(QPalette.AlternateBase, QColor(240, 240, 240))
-    palette.setColor(QPalette.ToolTipBase, QColor(255, 255, 255))
-    palette.setColor(QPalette.ToolTipText, QColor(50, 50, 50))
-    palette.setColor(QPalette.Text, QColor(50, 50, 50))
-    palette.setColor(QPalette.Button, QColor(240, 240, 240))
-    palette.setColor(QPalette.ButtonText, QColor(50, 50, 50))
-    palette.setColor(QPalette.Highlight, QColor(74, 144, 226))
-    palette.setColor(QPalette.HighlightedText, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.Window, QColor(240, 240, 240))
+    palette.setColor(QPalette.ColorRole.WindowText, QColor(50, 50, 50))
+    palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(240, 240, 240))
+    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.ToolTipText, QColor(50, 50, 50))
+    palette.setColor(QPalette.ColorRole.Text, QColor(50, 50, 50))
+    palette.setColor(QPalette.ColorRole.Button, QColor(240, 240, 240))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor(50, 50, 50))
+    palette.setColor(QPalette.ColorRole.Highlight, QColor(74, 144, 226))
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
     app.setPalette(palette)
 
     # 然后设置样式表（这样CSS优先级更高）
@@ -106,7 +108,7 @@ def main():
     )
 
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QMainWindow,
     QWidget,
     QVBoxLayout,
@@ -7,12 +7,10 @@ from PyQt5.QtWidgets import (
     QStackedWidget,
     QLabel,
     QStatusBar,
-    QGridLayout,
     QComboBox,
     QMessageBox,
 )
-from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QFont, QColor, QPalette
+from PyQt6.QtGui import QFont
 from core.config_manager import get_config, update_config
 from .home_page import HomePage
 from .styles import *

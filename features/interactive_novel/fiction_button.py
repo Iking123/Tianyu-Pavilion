@@ -1,5 +1,5 @@
-from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtWidgets import (
+from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QVBoxLayout,
@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (
     QWidget,
     QPushButton,
 )
-from PyQt5.QtGui import QFont, QColor
+from PyQt6.QtGui import QFont, QColor
 from core.character_manager import get_all_characters, get_character_name
 from core.config_manager import get_assist
 from core.fiction_manager import get_fiction_by_id
@@ -67,9 +67,9 @@ class FictionStartDialog(QDialog):
 
         # 标题
         title_label = QLabel(f"请选择参与《{self.name}》的角色")
-        title_label.setFont(QFont("Arial", 14, QFont.Bold))
+        title_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
         title_label.setStyleSheet("color: #2C3E50; margin-bottom: 10px;")
-        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title_label)
 
         # 角色数量提示
@@ -82,13 +82,13 @@ class FictionStartDialog(QDialog):
         subtitle_label.setFont(QFont("Arial", 10))
         subtitle_label.setStyleSheet("color: #7F8C8D; margin-bottom: 10px;")
         subtitle_label.setTextFormat(Qt.TextFormat.RichText)
-        subtitle_label.setAlignment(Qt.AlignCenter)
+        subtitle_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(subtitle_label)
 
         # 角色选择区域（使用滚动区域）
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll_area.setStyleSheet("border: none; background-color: transparent;")
 
         # 角色容器
@@ -130,7 +130,9 @@ class FictionStartDialog(QDialog):
 
         button_layout.addStretch(1)  # 添加伸缩因子
 
-        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
         button_layout.addWidget(button_box)
@@ -184,7 +186,7 @@ class FictionStartDialog(QDialog):
             )
             # 添加强制标识
             forced_label = QLabel("强制角色")
-            forced_label.setFont(QFont("Arial", 8, QFont.Bold))
+            forced_label.setFont(QFont("Arial", 8, QFont.Weight.Bold))
             forced_label.setStyleSheet(
                 "background-color: #FFC107;"
                 "color: white;"

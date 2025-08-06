@@ -1,5 +1,5 @@
 # search_toolbar.py
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QHBoxLayout,
     QLabel,
@@ -7,8 +7,8 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QSizePolicy,
 )
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
 
 
 class SearchToolbar(QWidget):
@@ -88,7 +88,7 @@ class SearchToolbar(QWidget):
         # 匹配计数
         self.match_label = QLabel("0/0")
         self.match_label.setFixedSize(120, 40)
-        self.match_label.setAlignment(Qt.AlignCenter)
+        self.match_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.match_label.setStyleSheet(
             """
             QLabel {
@@ -134,7 +134,7 @@ class SearchToolbar(QWidget):
         self.setVisible(False)
 
         # 设置大小策略，确保在布局中正确显示
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     def connect_signals(self, search_changed, prev_action, next_action, close_action):
         """连接信号到外部处理函数"""
