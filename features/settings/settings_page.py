@@ -20,12 +20,14 @@ from PyQt6.QtGui import QIcon, QFont, QDoubleValidator, QIntValidator
 from PyQt6.QtCore import Qt, QTimer
 from core.config_manager import *
 from ui.components import GoBackButton
+from translate import TRANSLATE
+from ui.main_window import MainWindow
 
 
 class SettingsPage(QWidget):
     """设置功能页面"""
 
-    def __init__(self, main_window=None):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         self.main_window = main_window
         # 保存初始滚动速度用于比较
@@ -112,6 +114,11 @@ class SettingsPage(QWidget):
         self.volcengine_api_key_input.setText(get_config("volcengine_api_key"))
         form_layout.addRow("火山方舟（豆包）API 密钥:", self.volcengine_api_key_input)
 
+        self.gemini_api_key_input = QLineEdit()
+        self.gemini_api_key_input.setPlaceholderText("输入 Gemini API 密钥")
+        self.gemini_api_key_input.setText(get_config("gemini_api_key"))
+        form_layout.addRow("Gemini API 密钥:", self.gemini_api_key_input)
+
         self.tavily_api_key_input = QLineEdit()
         self.tavily_api_key_input.setPlaceholderText("输入 Tavily API 密钥")
         self.tavily_api_key_input.setText(get_config("tavily_api_key"))
@@ -127,17 +134,23 @@ class SettingsPage(QWidget):
         form_layout.addWidget(feature_label)
         form_layout.addWidget(empty_row)
 
-        self.r1_checkbox = QCheckBox("启用 R1 深度思考")
-        self.r1_checkbox.setChecked(get_config("enable_r1"))
-        form_layout.addRow(self.r1_checkbox)
-
-        self.tavily_checkbox = QCheckBox("启用 Tavily 搜索")
+        self.tavily_checkbox = QCheckBox()
         self.tavily_checkbox.setChecked(get_config("enable_tavily"))
-        form_layout.addRow(self.tavily_checkbox)
+        form_layout.addRow("启用 Tavily 搜索：", self.tavily_checkbox)
 
-        self.baidu_checkbox = QCheckBox("启用百度搜索")
-        self.baidu_checkbox.setChecked(get_config("enable_baidu"))
-        form_layout.addRow(self.baidu_checkbox)
+        self.baidu_combobox = QComboBox()
+        self.baidu_combobox.addItems(["自动", "开", "关闭"])
+        self.baidu_combobox.setCurrentText(str(get_config("enable_baidu")))
+        form_layout.addRow("启用百度搜索：", self.baidu_combobox)
+
+        self.thinking_combobox = QComboBox()
+        self.thinking_combobox.addItems(["自动", "开", "关闭"])
+        self.thinking_combobox.setCurrentText(
+            TRANSLATE.get(str(get_config("thinking_type")), "关闭")
+        )
+        form_layout.addRow(
+            "启用深度思考（豆包1.6、Gemini Flash）：", self.thinking_combobox
+        )
 
         # 鼠标滚动速度输入栏
         self.speed_slider_input = QComboBox()
@@ -198,9 +211,12 @@ class SettingsPage(QWidget):
             tavily_api_key = self.tavily_api_key_input.text().strip()
             deepseek_api_key = self.deepseek_api_key_input.text().strip()
             volcengine_api_key = self.volcengine_api_key_input.text().strip()
-            enable_r1 = self.r1_checkbox.isChecked()
+            gemini_api_key = self.gemini_api_key_input.text().strip()
             enable_tavily = self.tavily_checkbox.isChecked()
-            enable_baidu = self.baidu_checkbox.isChecked()
+            enable_baidu = self.baidu_combobox.currentText().strip()
+            thinking_type = TRANSLATE.get(
+                self.thinking_combobox.currentText().strip(), "disabled"
+            )
             speed_slider = int(self.speed_slider_input.currentText())
         except Exception:
             QMessageBox.warning(self, "保存失败", "您可能输入错了什么东西？")
@@ -211,17 +227,23 @@ class SettingsPage(QWidget):
         new_config["username"] = username
         new_config["deepseek_api_key"] = deepseek_api_key
         new_config["volcengine_api_key"] = volcengine_api_key
+        new_config["gemini_api_key"] = gemini_api_key
         new_config["tavily_api_key"] = tavily_api_key
-        new_config["enable_r1"] = enable_r1
         new_config["enable_tavily"] = enable_tavily
         new_config["enable_baidu"] = enable_baidu
+        new_config["thinking_type"] = thinking_type
         new_config["speed_slider"] = speed_slider  # 保存鼠标滚动速度
 
         # 保存配置
         update_config(new_config)
 
-        # 更新状态栏提示
+        # 更新状态栏
         if self.main_window:
+            self.main_window.btn_tavily.setChecked(enable_tavily)
+            self.main_window.baidu_combobox.setCurrentText("百度搜索：" + enable_baidu)
+            self.main_window.thinking_combobox.setCurrentText(
+                "深度思考：" + thinking_type
+            )
             if speed_changed:
                 self.main_window.update_status(
                     "设置已保存！需要重启应用才能使鼠标滚动速度生效"
@@ -233,3 +255,12 @@ class SettingsPage(QWidget):
         """返回主页"""
         if self.main_window:
             self.main_window.switch_page(0)
+
+    def showEvent(self, event):
+        """页面显示时刷新一些可通过状态栏更改的设置"""
+        super().showEvent(event)
+        self.tavily_checkbox.setChecked(get_config("enable_tavily"))
+        self.baidu_combobox.setCurrentText(str(get_config("enable_baidu")))
+        self.thinking_combobox.setCurrentText(
+            TRANSLATE.get(str(get_config("thinking_type")), "关闭")
+        )

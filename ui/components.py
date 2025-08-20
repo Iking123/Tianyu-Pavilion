@@ -1,7 +1,47 @@
-from PyQt6.QtWidgets import QPushButton, QTextBrowser
-from PyQt6.QtGui import QIcon, QPixmap, QPainter, QPainterPath, QPen
+from PyQt6.QtWidgets import QWidget, QPushButton, QTextBrowser, QLabel
+from PyQt6.QtGui import (
+    QIcon,
+    QPixmap,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QColor,
+    QPaintEvent,
+)
 from PyQt6.QtCore import QSize, Qt, QEvent
 from funcs import resource_path
+
+
+class ImageWidget(QLabel):
+    def __init__(self, image_path):
+        super().__init__()
+        pixmap = QPixmap(image_path)
+        self.setPixmap(pixmap)
+
+
+class ColoredWidget(QWidget):
+    def __init__(self, color: QColor = QColor("#F5F7FA")):
+        super().__init__()
+        self.backgroundColor = color
+
+    def setBackgroundColor(self, color: str):
+        self.backgroundColor = QColor(color)
+        self.setStyleSheet(f"background-color: {color}")
+        self.update()  # 触发重绘
+
+    def paintEvent(self, event: QPaintEvent):
+        # 创建绘制器
+        painter = QPainter(self)
+
+        # 设置抗锯齿渲染
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        # 填充背景色
+        painter.fillRect(self.rect(), self.backgroundColor)
+
+        # # 可选：添加边框
+        # painter.setPen(Qt.GlobalColor.darkGray)
+        # painter.drawRect(self.rect().adjusted(0, 0, -1, -1))
 
 
 class GoBackButton(QPushButton):
@@ -116,6 +156,9 @@ class SendButton(QPushButton):
         if callback:
             self.clicked.connect(callback)
 
+        # 设置默认光标为箭头
+        self.setCursor(Qt.CursorShape.ArrowCursor)
+
     def _create_custom_icon(self):
         """创建自定义箭头图标"""
         # 创建 QPixmap 作为画布
@@ -161,6 +204,112 @@ class SendButton(QPushButton):
         """重写setEnabled方法，在状态改变时更新图标颜色"""
         super().setEnabled(enabled)
         # 可以在这里根据enabled状态调整图标颜色，但由于背景色已通过CSS控制，这里暂不需要额外处理
+
+    # 当鼠标进入按钮区域时
+    def enterEvent(self, event):
+        if self.isEnabled():  # 只在按钮可用时显示手形
+            self.setCursor(Qt.CursorShape.PointingHandCursor)
+        super().enterEvent(event)
+
+    # 当鼠标离开按钮区域时
+    def leaveEvent(self, event):
+        self.setCursor(Qt.CursorShape.ArrowCursor)  # 恢复默认光标
+        super().leaveEvent(event)
+
+
+class ScrollToBottomButton(QPushButton):
+    """自定义滚动到底部按钮组件，使用QPainterPath绘制向下箭头"""
+
+    def __init__(self, parent=None, tip="滚动到底部", callback=None):
+        super().__init__(parent)
+        self.setFixedSize(60, 60)  # 固定按钮大小
+        self.setIconSize(QSize(60, 60))  # 图标大小
+
+        # 创建自定义图标
+        self._create_custom_icons()
+
+        # 设置样式表
+        self.setStyleSheet(
+            """
+            QPushButton {
+                background-color: rgba(255, 255, 255, 36);
+                border: 2px solid #CCCCCC;
+                border-radius: 30px;
+            }
+            QPushButton:hover {
+                background-color: #F0F0F0;
+            }
+            QPushButton:pressed {
+                background-color: #E0E0E0;
+            }
+        """
+        )
+
+        # 设置工具提示
+        self.setToolTip(tip)
+
+        if callback:
+            self.clicked.connect(callback)
+
+    def _create_custom_icons(self):
+        """创建正常状态和悬停状态的自定义向下箭头图标"""
+        # 创建正常状态图标
+        self.normal_icon = self._create_arrow_icon(Qt.GlobalColor.darkGray)
+        self.hover_icon = self._create_arrow_icon(Qt.GlobalColor.black)
+
+        # 设置默认图标
+        self.setIcon(QIcon(self.normal_icon))
+
+    def _create_arrow_icon(self, color):
+        """创建指定颜色的向下箭头图标"""
+        # 创建 QPixmap 作为画布
+        pixmap = QPixmap(60, 60)
+        pixmap.fill(Qt.GlobalColor.transparent)  # 透明背景
+
+        # 创建画笔
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)  # 抗锯齿
+
+        # 创建向下箭头路径 (⌵ 形状)
+        path = QPainterPath()
+
+        # 箭头的中心位置
+        center_x = 30
+        center_y = 30
+
+        # 定义向下箭头的路径点
+        # 左上点
+        path.moveTo(center_x - 10, center_y - 5)
+        # 底部点
+        path.lineTo(center_x, center_y + 5)
+        # 右上点
+        path.lineTo(center_x + 10, center_y - 5)
+
+        # 设置画笔样式
+        pen = QPen(color)
+        pen.setWidth(3)  # 设置线宽
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)  # 圆形端点
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)  # 圆形连接
+        painter.setPen(pen)
+
+        # 不填充，只绘制线条
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+
+        # 绘制路径
+        painter.drawPath(path)
+        painter.end()
+
+        return pixmap
+
+    def enterEvent(self, event):
+        """鼠标进入事件，切换到悬停图标"""
+        self.setIcon(QIcon(self.hover_icon))
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        """鼠标离开事件，切换回正常图标"""
+        self.setIcon(QIcon(self.normal_icon))
+        super().leaveEvent(event)
 
 
 class CustomTextBrowser(QTextBrowser):

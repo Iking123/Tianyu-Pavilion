@@ -29,7 +29,8 @@ class FictionButton(CardWidget):
     def __init__(self, fiction_data, parent=None):
         title = fiction_data.get("name", "未知小说") or "未知小说"
         description = fiction_data.get("blurb", "无简介") or "无简介"
-        super().__init__(title, description, min_height=100, parent=parent)
+        icon_path = fiction_data.get("avatar")
+        super().__init__(title, description, icon_path, 100, parent)
         self.fiction_data = fiction_data
 
 
@@ -43,7 +44,7 @@ class FictionStartDialog(QDialog):
         self.selected_characters = []
         self.forced_character_id = None
         self.characters_num_level = 3  # 默认3级（最多3人）
-        self.direct = False  # 默认不允许直接进入
+        self.characters_minimun = 1  # 默认至少要1名角色
 
         # 获取小说信息（如果有强制角色）
         if self.fiction_id:
@@ -53,7 +54,7 @@ class FictionStartDialog(QDialog):
                 if self.forced_character_id:
                     self.selected_characters.append(self.forced_character_id)
                 self.characters_num_level = fiction.get("characters_num_level", 3)
-                self.direct = fiction.get("direct", False)
+                self.characters_minimun = fiction.get("characters_minimun", False)
 
         self.setup_ui()
 
@@ -74,9 +75,18 @@ class FictionStartDialog(QDialog):
 
         # 角色数量提示
         max_characters = self.get_max_characters()
-        subtitle_text = f"本小说的开局将由 <b>{get_assist(True)}</b> 撰写<br>最多可选择 {max_characters} 个角色"
+        subtitle_text = f"本小说的开局将由 <b>{get_assist(True)}</b> 撰写<br>请选择"
+        if max_characters == self.characters_minimun:
+            subtitle_text += f" <b>{max_characters}</b> 名主角"
+        else:
+            subtitle_text += f"至多 <b>{max_characters}</b> 名主角，"
+            subtitle_text += (
+                f"至少 <b>{self.characters_minimun}</b> 名主角"
+                if self.characters_minimun
+                else "可不选"
+            )
         if self.forced_character_id:
-            subtitle_text += " (包含强制角色)"
+            subtitle_text += " （含强制角色）"
 
         subtitle_label = QLabel(subtitle_text)
         subtitle_label.setFont(QFont("Arial", 10))
@@ -106,32 +116,13 @@ class FictionStartDialog(QDialog):
 
         # 按钮区域
         button_layout = QHBoxLayout()
-
-        # 添加"直接进入"按钮（如果允许）
-        if self.direct:
-            direct_button = QPushButton("直接进入")
-            direct_button.setMinimumSize(100, 40)
-            direct_button.setStyleSheet(
-                """
-                QPushButton {
-                    background-color: #4CAF50;
-                    color: white;
-                    border-radius: 5px;
-                    padding: 8px 16px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background-color: #43A047;
-                }
-                """
-            )
-            direct_button.clicked.connect(self.direct_enter)
-            button_layout.addWidget(direct_button)
-
         button_layout.addStretch(1)  # 添加伸缩因子
-
         button_box = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        self.btn_accept = button_box.button(QDialogButtonBox.StandardButton.Ok)
+        self.btn_accept.setVisible(
+            len(self.selected_characters) >= self.characters_minimun
         )
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
@@ -217,13 +208,16 @@ class FictionStartDialog(QDialog):
             # 取消选择
             self.selected_characters.remove(character_id)
             button.set_selected(False)  # 更新按钮状态
+            self.btn_accept.setVisible(
+                len(self.selected_characters) >= self.characters_minimun
+            )
         else:
             # 检查是否超过最大数量
             max_chars = self.get_max_characters()
             forced_count = 1 if self.forced_character_id else 0
             if len(self.selected_characters) + forced_count >= max_chars:
                 QMessageBox.warning(
-                    self, "选择限制", f"最多只能选择 {max_chars} 个角色！"
+                    self, "选择限制", f"最多只能选择 {max_chars} 名角色！"
                 )
                 return
 
@@ -241,15 +235,17 @@ class FictionStartDialog(QDialog):
             # 添加选择
             self.selected_characters.append(character_id)
             button.set_selected(True)  # 更新按钮状态
+            self.btn_accept.setVisible(
+                len(self.selected_characters) >= self.characters_minimun
+            )
 
     def accept(self):
         max_chars = self.get_max_characters()
 
-        if (
-            len(self.selected_characters) - bool(self.forced_character_id) == 0
-            and not self.direct
-        ):
-            QMessageBox.warning(self, "选择错误", "必须选择至少1名主角！")
+        if len(self.selected_characters) < self.characters_minimun:
+            QMessageBox.warning(
+                self, "选择错误", f"必须选择至少{self.characters_minimun}名主角！"
+            )
             return
 
         if len(self.selected_characters) > max_chars:
@@ -264,11 +260,3 @@ class FictionStartDialog(QDialog):
             return
 
         super().accept()
-
-    def direct_enter(self):
-        """直接进入小说（不选择任何角色）"""
-        # 只包含强制角色（如果有）
-        self.selected_characters = (
-            [self.forced_character_id] if self.forced_character_id else []
-        )
-        self.accept()

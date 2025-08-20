@@ -8,10 +8,12 @@ from PyQt6.QtWidgets import (
     QLabel,
     QStatusBar,
     QComboBox,
+    QListView,
     QMessageBox,
 )
 from PyQt6.QtGui import QFont
-from core.config_manager import get_config, update_config
+from core.config_manager import get_config, get_model_name2, update_config
+from translate import TRANSLATE
 from .home_page import HomePage
 from .styles import *
 
@@ -42,7 +44,6 @@ class MainWindow(QMainWindow):
         self.status_bar.setFont(QFont("Arial", 10))
         self.status_bar.setMinimumHeight(50)
         self.setStatusBar(self.status_bar)
-        self.scroll_button = None
 
         # 初始化状态栏控件
         self.init_status_bar()
@@ -84,28 +85,42 @@ class MainWindow(QMainWindow):
         separator.setStyleSheet("color: #999; margin: 0 5px;")
         left_layout.addWidget(separator)
 
-        # 添加模型选择下拉框
+        # 添加下拉选择框、按钮等等
+        self.thinking_combobox = QComboBox()
+        self.thinking_combobox.setView(QListView())
+        self.thinking_combobox.addItems(
+            ["深度思考：自动", "深度思考：开", "深度思考：关闭"]
+        )
+        self.thinking_combobox.setMaximumWidth(245)
+        self.thinking_combobox.setCurrentText(
+            "深度思考：" + TRANSLATE.get(str(get_config("thinking_type")), "关闭")
+        )
+        self.thinking_combobox.currentIndexChanged.connect(self.change_thinking)
+        left_layout.addWidget(self.thinking_combobox)
+
         self.model_combobox = QComboBox()
+        self.model_combobox.setView(QListView())
         self.model_combobox.addItems(
             [
                 "DeepSeek-R1",
                 "DeepSeek-V3",
                 "Doubao-Seed-1.6-thinking",
                 "Doubao-Seed-1.6",
+                "Gemini 2.5 Pro",
+                "Gemini 2.5 Flash",
+                "Gemini 2.5 Flash-Lite",
             ]
         )
-        self.model_combobox.setMaximumWidth(388)
-        current_model = get_config("model")
-        if current_model == "deepseek-reasoner":
-            self.model_combobox.setCurrentText("DeepSeek-R1")
-        elif current_model == "deepseek-chat":
-            self.model_combobox.setCurrentText("DeepSeek-V3")
-        elif current_model == "doubao-seed-1-6-thinking-250715":
-            self.model_combobox.setCurrentText("Doubao-Seed-1.6-thinking")
-        elif current_model == "doubao-seed-1-6-250615":
-            self.model_combobox.setCurrentText("Doubao-Seed-1.6")
+        self.model_combobox.setMaximumWidth(385)
+        model_name = get_model_name2()
+        self.model_combobox.setCurrentText(model_name)
         self.model_combobox.currentIndexChanged.connect(self.change_model)
         left_layout.addWidget(self.model_combobox)
+
+        self.thinking_combobox.setVisible(
+            model_name
+            in ["Doubao-Seed-1.6", "Gemini 2.5 Flash", "Gemini 2.5 Flash-Lite"]
+        )
 
         self.btn_tavily = QPushButton("Tavily")
         self.btn_tavily.setCheckable(True)
@@ -118,46 +133,41 @@ class MainWindow(QMainWindow):
         self.btn_tavily.clicked.connect(self.toggle_tavily)
         left_layout.addWidget(self.btn_tavily)
 
+        self.baidu_combobox = QComboBox()
+        self.baidu_combobox.setView(QListView())
+        self.baidu_combobox.addItems(
+            ["百度搜索：自动", "百度搜索：开", "百度搜索：关闭"]
+        )
+        self.baidu_combobox.setMaximumWidth(245)
+        self.baidu_combobox.setCurrentText("百度搜索：" + get_config("enable_baidu"))
+        self.baidu_combobox.currentIndexChanged.connect(self.change_baidu)
+        left_layout.addWidget(self.baidu_combobox)
+
         # 添加到状态栏左侧
         self.status_bar.addPermanentWidget(left_container, 1)
-
-        # 添加滚动到底部按钮到右侧
-        self.scroll_button = QPushButton("↓ 滚动到底")
-        self.scroll_button.setFixedHeight(45)
-        self.scroll_button.setFont(QFont("Microsoft YaHei", 10))  # 明确设置字体
-        self.scroll_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #4A90E2;
-                color: white;
-                border: none;
-                padding: 5px 10px;
-                border-radius: 4px;
-                font-weight: bold;
-                font-family: Microsoft YaHei !important;
-                font-size: 10pt !important;
-            }
-            QPushButton:hover {
-                background-color: #3A7BC8;
-            }
-            """
-        )
-        self.status_bar.addPermanentWidget(self.scroll_button)
-
-        # 强制设置状态栏字体
-        self.status_bar.setFont(QFont("Microsoft YaHei", 10))
 
     def change_model(self, index):
         new_config = get_config()
         model_text = self.model_combobox.currentText()
-        if model_text == "DeepSeek-R1":
-            new_config["model"] = "deepseek-reasoner"
-        elif model_text == "DeepSeek-V3":
-            new_config["model"] = "deepseek-chat"
-        elif model_text == "Doubao-Seed-1.6-thinking":
-            new_config["model"] = "doubao-seed-1-6-thinking-250715"
-        elif model_text == "Doubao-Seed-1.6":
-            new_config["model"] = "doubao-seed-1-6-250615"
+        new_config["model"] = TRANSLATE.get(model_text)
+        update_config(new_config)
+        self.thinking_combobox.setVisible(
+            new_config["model"]
+            in ["doubao-seed-1-6-250615", "gemini-2.5-flash", "gemini-2.5-flash-lite"]
+        )
+        self.update_status()
+
+    def change_thinking(self, index):
+        new_config = get_config()
+        thinking_text = self.thinking_combobox.currentText()
+        new_config["thinking_type"] = TRANSLATE.get(thinking_text[5:])
+        update_config(new_config)
+        self.update_status()
+
+    def change_baidu(self, index):
+        new_config = get_config()
+        baidu_text = self.baidu_combobox.currentText()
+        new_config["enable_baidu"] = baidu_text[5:]
         update_config(new_config)
         self.update_status()
 
@@ -265,10 +275,6 @@ class MainWindow(QMainWindow):
     def set_status(self, message):
         """设置状态栏消息"""
         self.status_label.setText(message)
-
-    def get_scroll_button(self):
-        """获取滚动到底部按钮"""
-        return self.scroll_button
 
     def update_status(self, message=None):
         """更新状态栏"""

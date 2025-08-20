@@ -2,11 +2,13 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QSplitter, QMessageBox
 from PyQt6.QtCore import Qt, QTimer
 from core.worker import Worker
 from core.config_manager import *
+from funcs import resource_path
 from ui.styles import *
 from ui.search_toolbar import SearchToolbar
 from ui.message_display import MessageDisplayArea
 from ui.input_panel import InputPanel  # 导入新的输入面板组件
 from ui.main_window import MainWindow
+from ui.components import ImageWidget
 
 
 class ChatComponent(QWidget):
@@ -28,6 +30,7 @@ class ChatComponent(QWidget):
             [{"role": "system", "content": get_system_prompt()}] if ini_msg else []
         )
         self.worker = None
+        self.previous_response_id = "start"
         self.timer = None
         self.worker_active = False
         self.thinking_widget = None
@@ -75,12 +78,8 @@ class ChatComponent(QWidget):
         splitter.addWidget(self.input_panel)
 
         # 设置分割器大小
-        splitter.setSizes([1200, 400])
+        splitter.setSizes([1300, 300])
         main_layout.addWidget(splitter)
-
-        # 连接滚动到底部按钮
-        scroll_button = self.main_window.get_scroll_button()
-        scroll_button.clicked.connect(self.message_display.scroll_to_bottom)
 
         # 搜索定时器
         self.search_timer = QTimer()
@@ -89,26 +88,20 @@ class ChatComponent(QWidget):
 
     #         # 添加测试消息
     #         test_message = self.message_display.add_message_by_role(
-    #             "character_default_1",
-    #             """# 测试
-    # `喵`
-
-    # ```python
-    # print("test")
-    # ```
-    # - 首先
-    #     1. 首先啊
-    #     2. 然后啊
-    #     3. 再然后啊
-    # - 其次
-
-    # 1. 那我问你
-    #     - 你是男的
-    #     - 还是女的
-    #     - 你看得懂$1+1=2$吗""",
+    #             "assistant_Gemini 2.5 Pro",
+    #             """| 心情值 |
+    # | - |
+    # | -5 | """,
     #         )
     #         test_message.force_render()
-    #         print(test_message.content_browser.toHtml())
+
+    # self.message_display.set_all_message_background("gold")
+    # QTimer.singleShot(
+    #     3000, lambda: self.message_display.set_all_message_background("white")
+    # )
+
+    # c = ImageWidget(resource_path("resources/images/succeed.png"))
+    # self.message_display.add_widget(c)
 
     def safe_update_time(self):
         """安全更新时间显示"""
@@ -128,7 +121,7 @@ class ChatComponent(QWidget):
         except:
             pass
 
-    def send_message(self, message, role="user", display=True):
+    def send_message(self, message: str, role="user", display=True):
         if not message:
             return
 
@@ -153,7 +146,9 @@ class ChatComponent(QWidget):
         self.conversation_history.append({"role": role, "content": message})
 
         # 创建新Worker
-        self.worker = Worker(message, self.conversation_history)
+        self.worker = Worker(
+            message, self.conversation_history, self.previous_response_id
+        )
 
         # 使用队列连接确保线程安全
         self.worker.start_thinking.connect(
@@ -171,7 +166,7 @@ class ChatComponent(QWidget):
         self.worker.search_complete.connect(
             self.message_display.add_search_result, Qt.ConnectionType.QueuedConnection
         )
-        self.worker.finished.connect(
+        self.worker.finish_signal.connect(
             self.on_worker_finished, Qt.ConnectionType.QueuedConnection
         )
 
@@ -182,7 +177,7 @@ class ChatComponent(QWidget):
         self.thinking_widget = self.message_display.add_message_by_role(
             role, "", is_thinking=True
         )
-        self.message_display.scroll_to_bottom()
+        self.message_display.request_scrolling()
 
     def start_replying(self, role):
         """开始新的回复消息"""
@@ -194,12 +189,12 @@ class ChatComponent(QWidget):
 
         # 开始新的回复消息
         self.message_display.start_assistant_message(role, "")
-        self.message_display.scroll_to_bottom()
+        self.message_display.request_scrolling()
 
     def add_message_content(self, role, content, is_thinking=False):
         """添加消息内容到聊天界面"""
         try:
-            if role and role.startswith("assistant"):
+            if role and (role.startswith("assistant") or role.startswith("character")):
                 if is_thinking:
                     if self.thinking_widget:
                         self.thinking_widget.append_content(content)
@@ -207,13 +202,16 @@ class ChatComponent(QWidget):
                     self.message_display.append_to_assistant_message(content)
             else:
                 self.message_display.add_message_by_role(role, content, is_thinking)
-                self.message_display.scroll_to_bottom()
+                self.message_display.request_scrolling()
         except Exception as e:
             print(f"添加消息内容时出错: {e}")
             # 不要让异常导致程序崩溃
 
-    def on_worker_finished(self):
+    def on_worker_finished(self, full_response: str):
         """工作线程完成时调用"""
+        self.previous_response_id = (
+            self.worker.previous_response_id if self.worker else "start"
+        )
         self.input_panel.set_send_enabled(True)
         self.worker_active = False
 
@@ -227,7 +225,7 @@ class ChatComponent(QWidget):
             self.thinking_widget = None
 
         # 滚动到底部
-        self.message_display.scroll_to_bottom()
+        self.message_display.request_scrolling()
 
     def restart(self, force=False):
         """重新开始对话（清除此次对话历史）"""
@@ -252,6 +250,7 @@ class ChatComponent(QWidget):
         if self.worker and self.worker.isRunning():
             self.worker.stop()
             self.worker.wait()
+        self.previous_response_id = "start"
 
         # 清除聊天界面
         self.message_display.clear_messages()

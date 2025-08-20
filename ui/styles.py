@@ -26,18 +26,31 @@ APP_STYLESHEET = """
         /* 移除最小宽度设置 */
         padding: 2px 8px;  /* 减少内边距 */
         font-size: 10pt;  /* 增大字体 */
-        border-radius: 3px;
-    }
-    /* 滚动按钮样式 */
-    QStatusBar QPushButton[style*="scroll"] {
-        background-color: #4A90E2;
-        color: white;
+        border-radius: 4px;
     }
     
     QToolTip {
         background-color: white;
         color: black;
         font-size: 10pt;
+    }
+    
+    QComboBox QAbstractItemView {
+        border: 1px solid #ccc;
+        background: snow;
+        padding: 2px; /* 增加选项间距，避免拥挤 */
+    }
+    
+    /* 列表项基础样式（非悬停/非选中） */
+    QComboBox QAbstractItemView::item {
+        color: black;  /* 默认黑色文字 */
+        padding: 8px 12px; /* 增大点击区域，避免误触 */
+    }
+    
+    /* 选中态：区分悬停，设为蓝色 */
+    QComboBox QAbstractItemView::item:selected {
+        color: #0078d7;  /* 选中文字改回蓝色，避免与悬停混淆 */
+        background: #e8f4ff;
     }
 """
 
@@ -402,19 +415,6 @@ BUTTON_STYLES = {
         background-color: #C0392B;
     }
     """,
-    "scroll": """
-        QPushButton {
-            background-color: #4A90E2;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-weight: bold;
-            padding: 5px 10px;
-        }
-        QPushButton:hover {
-            background-color: #3A7BC8;
-        }
-    """,
     "option": """
         QPushButton {
             background-color: #5DADE2;
@@ -497,11 +497,13 @@ MESSAGE_BASE_STYLES = {
         }
     """,
     "option": """
-        color: black;
-        background-color: white;
-        border: 1px solid black;
-        border-radius: 4px;
-        padding: 10px;
+        QTextBrowser {
+            color: black;
+            background-color: white;
+            border: 1px solid black;
+            border-radius: 4px;
+            padding: 10px;
+        }
     """,
     "default": """
         QTextBrowser {

@@ -11,7 +11,7 @@ else:
     HARDCODED_CHARACTERS = []
 
 # 角色信息加密文件路径
-CHARACTERS_ENC_PATH = "characters.enc"
+CHARACTERS_ENC_PATH = "enc/characters.enc"
 
 # 角色数据缓存（模块级变量，初始时_cached_characters为None）
 _cache_lock = threading.Lock()  # 缓存锁

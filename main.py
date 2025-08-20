@@ -3,6 +3,7 @@ import sys
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QPalette, QColor, QIcon, QFontDatabase
 from PyQt6.QtNetwork import QNetworkAccessManager
+from PyQt6.QtCore import QObject, QThread, pyqtSignal
 from ui.main_window import MainWindow
 from core.config_manager import get_config
 from ui.styles import APP_STYLESHEET, ENHANCED_SCROLLBAR_STYLE
@@ -10,7 +11,26 @@ from core.character_summary import character_summary
 from funcs import resource_path
 
 
+class SomethingWorker(QObject):
+    finished = pyqtSignal()  # 任务完成信号
+
+    def run_task(self):
+        """耗时操作"""
+        from core.jieba_summarizer import summarizer
+
+        self.finished.emit()  # 任务完成后发送信号
+
+
 def main():
+    thread = QThread()
+    worker = SomethingWorker()  # 创建独立对象
+    worker.moveToThread(thread)  # 多线程来搞事情
+    thread.started.connect(worker.run_task)  # 线程启动时执行耗时任务
+    thread.start()
+    worker.finished.connect(thread.quit)  # 任务完成后让线程退出
+    worker.finished.connect(worker.deleteLater)  # 清理 worker
+    thread.finished.connect(thread.deleteLater)  # 线程结束后清理自身
+
     os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "0"  # 禁用高DPI缩放
     os.environ["QT_SCALE_FACTOR"] = "1"  # 强制缩放因子=1
 
@@ -84,12 +104,9 @@ def main():
         "icon.jpg",  # 备用格式
     ]
 
-    base_path = getattr(sys, "_MEIPASS", os.path.abspath("."))
-    icon_dir = os.path.join(base_path, "resources", "icons")
-
     # 尝试加载不同尺寸的图标
     for icon_file in icon_sizes:
-        icon_path = os.path.join(icon_dir, icon_file)
+        icon_path = resource_path(os.path.join("resources", "icons", icon_file))
         if os.path.exists(icon_path):
             window.setWindowIcon(QIcon(icon_path))
             break

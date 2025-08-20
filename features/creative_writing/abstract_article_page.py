@@ -71,20 +71,20 @@ class AbstractArticlePage(QWidget):
 
         heading_label = QLabel("作文标题：")
         heading_label.setStyleSheet(
-            "font-size: 16pt; margin-left: 10px;"
+            "font-size: 14pt; margin-left: 10px;"
         )  # 给标签添加左边距
         self.heading_input = QLineEdit()
         self.heading_input.setPlaceholderText("输入作文标题...")
-        self.heading_input.setStyleSheet("font-size: 16pt; margin: 5px 20px 0px 20px;")
+        self.heading_input.setStyleSheet("font-size: 14pt; margin: 5px 20px 0px 20px;")
         input_layout.addRow(heading_label, self.heading_input)
 
         self.length_input = MySlider(
-            self, 0, 10000, 100, 300, 1000, "字数要求： ", 16, "字", 950
+            self, 0, 10000, 100, 300, 1000, "字数要求： ", 14, "字", 950
         )
         input_layout.addRow(self.length_input)
 
         layout.addLayout(input_layout)
-        layout.addSpacing(50)
+        layout.addSpacing(30)
 
         # 按钮区域
         button_layout = QHBoxLayout()
@@ -98,7 +98,7 @@ class AbstractArticlePage(QWidget):
                 color: white;
                 padding: 10px 20px;
                 border-radius: 5px;
-                font-size: 28pt;
+                font-size: 16pt;
             }
             QPushButton:hover {
                 background-color: #3A7BC8;
@@ -112,7 +112,7 @@ class AbstractArticlePage(QWidget):
         # 输出区域
         self.output_layout = MessageDisplayArea()
         output_label = QLabel("生成结果：")
-        output_label.setStyleSheet("font-size: 16pt; margin-bottom: 5px;")
+        output_label.setStyleSheet("font-size: 14pt; margin-bottom: 5px;")
         self.output_layout.container_layout.addWidget(output_label)
         self.output_message = None
         layout.addWidget(self.output_layout)
@@ -177,7 +177,7 @@ class AbstractArticlePage(QWidget):
         self.heading_input.setText("")
         self.length_input.slider.setValue(950)
         output_label = QLabel("生成结果：")
-        output_label.setStyleSheet("font-size: 16pt; margin-bottom: 5px;")
+        output_label.setStyleSheet("font-size: 14pt; margin-bottom: 5px;")
         self.output_layout.container_layout.addWidget(output_label)
         if self.main_window:
             self.main_window.set_status("就绪")

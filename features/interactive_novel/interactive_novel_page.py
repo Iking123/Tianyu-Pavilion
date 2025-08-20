@@ -37,9 +37,8 @@ from ui.input_panel import CustomTextEdit
 class FictionEditDialog(QDialog):
     """小说编辑对话框"""
 
-    def __init__(self, parent=None, names=None, fiction=None):
+    def __init__(self, parent=None, fiction=None):
         super().__init__(parent)
-        self.names = names or []
         self.fiction = fiction or {}
         self.setup_ui()
 
@@ -61,7 +60,7 @@ class FictionEditDialog(QDialog):
         self.name_input.setText(self.fiction.get("name", ""))
         self.name_input.setMaxLength(50)
         self.name_input.setToolTip("至多50个字符")
-        form_layout.addRow("小说名称:", self.name_input)
+        form_layout.addRow("小说名称<span style='color:red'>*</span>:", self.name_input)
 
         # 简介
         self.blurb_input = CustomTextEdit(None, 100)
@@ -80,7 +79,7 @@ class FictionEditDialog(QDialog):
         self.plot_input = CustomTextEdit(None, 3500)
         self.plot_input.setPlaceholderText("描述小说的主要情节...")
         self.plot_input.setPlainText(self.fiction.get("plot", ""))
-        form_layout.addRow("情节描述:", self.plot_input)
+        form_layout.addRow("情节描述<span style='color:red'>*</span>:", self.plot_input)
 
         # 小说规则
         self.task_input = CustomTextEdit(None, 3500)
@@ -97,7 +96,9 @@ class FictionEditDialog(QDialog):
         layout.addLayout(form_layout)
 
         # 按钮
-        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
@@ -108,15 +109,16 @@ class FictionEditDialog(QDialog):
         if not name:
             QMessageBox.warning(self, "输入错误", "小说名称不能为空！")
             return
-        if name in self.names:
-            QMessageBox.warning(self, "输入错误", "小说名称不能重复！")
+        plot = self.plot_input.toPlainText().strip()
+        if not plot:
+            QMessageBox.warning(self, "输入错误", "情节描述不能为空！")
             return
 
         # 收集数据
         fiction_data = {
-            "name": self.name_input.text().strip(),
+            "name": name,
             "blurb": self.blurb_input.toPlainText().strip(),
-            "plot": self.plot_input.toPlainText().strip(),
+            "plot": plot,
             "task": self.task_input.toPlainText().strip(),
             "plot_attention": self.plot_attention_input.toPlainText().strip(),
         }
@@ -140,7 +142,6 @@ class InteractiveNovelPage(QWidget):
         self.parent = parent
         self.current_fiction = None
         self.current_mode = "view"  # view, edit, delete
-        self.names = []
         self.setup_ui()
 
     def setup_ui(self):
@@ -292,14 +293,11 @@ class InteractiveNovelPage(QWidget):
             self.fiction_layout.addWidget(no_fic_label)
             return
 
-        self.names = []
-
         # 为每部小说创建按钮
         for fic in fictions:
             fic_button = FictionButton(fic, self)
             fic_button.clicked.connect(lambda c=fic: self.on_fiction_clicked(c))
             self.fiction_layout.addWidget(fic_button)
-            self.names.append(fic.get("name", ""))
 
         # 添加弹性空间
         self.fiction_layout.addStretch()
@@ -410,13 +408,13 @@ class InteractiveNovelPage(QWidget):
 
     def add_new_fiction(self):
         """添加新小说"""
-        dialog = FictionEditDialog(self, self.names)
+        dialog = FictionEditDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.load_fictions()
 
     def edit_fiction(self, fiction):
         """编辑小说"""
-        dialog = FictionEditDialog(self, self.names, fiction)
+        dialog = FictionEditDialog(self, fiction)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.load_fictions()
 

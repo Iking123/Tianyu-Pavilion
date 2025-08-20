@@ -223,7 +223,7 @@ class IdiomSolitairePage(QWidget):
         # 1. 验证输入长度 (应该已经被输入框限制，双重检查)
         if len(text) != 4:
             self.message_display.add_message_by_role(
-                get_assist(), "⚠️ 成语必须是四个字！请重新输入。"
+                "assistant_天语阁", "⚠️ 成语必须是四个字！请重新输入。"
             )
             return
 
@@ -304,7 +304,7 @@ class IdiomSolitairePage(QWidget):
         self.current_assistant_message = self.message_display.add_message_by_role(
             get_assist(), "🤔 正在思考接龙方案..."
         )
-        self.message_display.scroll_to_bottom()
+        self.message_display.request_scrolling()
 
     def handle_thinking_content(self, new_content):
         """处理流式接收到的思考内容"""
@@ -367,7 +367,7 @@ class IdiomSolitairePage(QWidget):
                 )
 
                 # 滚动到底并启用用户输入
-                self.message_display.scroll_to_bottom()
+                self.message_display.request_scrolling()
                 self.input_panel.set_send_enabled(True)
             else:
                 # 无效响应
@@ -386,7 +386,7 @@ class IdiomSolitairePage(QWidget):
                 self.current_assistant_message.force_render()
                 self.current_assistant_message.adjust_height()
         self.current_assistant_message = None
-        self.message_display.scroll_to_bottom()
+        self.message_display.request_scrolling()
 
     def handle_ai_error(self, error_msg):
         """处理API错误 - 恢复状态并允许用户重试"""
@@ -432,7 +432,7 @@ class IdiomSolitairePage(QWidget):
         self.input_panel.set_send_enabled(True)
 
         # 滚动到底部
-        self.message_display.scroll_to_bottom()
+        self.message_display.request_scrolling()
 
     def end_game(self, player_wins, message=None):
         """结束游戏并显示结果"""
@@ -459,7 +459,7 @@ class IdiomSolitairePage(QWidget):
             )
 
         self.message_display.add_message_by_role(get_assist(), end_message)
-        self.message_display.scroll_to_bottom()
+        self.message_display.request_scrolling()
 
     def format_history(self):
         """格式化历史记录用于系统提示"""

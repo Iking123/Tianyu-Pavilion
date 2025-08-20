@@ -1,4 +1,5 @@
 import html
+import re
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -12,10 +13,9 @@ from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QEvent
 from PyQt6.QtNetwork import QNetworkReply
 import time
 
-from ui.components import CustomTextBrowser
+from .components import CustomTextBrowser
 from . import qtext_markdown_utils  # 导入Markdown工具
 from .styles import *  # 导入样式
-from core.config_manager import get_config
 from funcs import *
 from .highlight import *
 from core.character_manager import get_character_by_id
@@ -101,6 +101,8 @@ class MessageWidget(QWidget):
                         avatar_path = "resources/images/deepseek.png"
                     elif role.startswith("assistant_豆包"):
                         avatar_path = "resources/images/doubao.png"
+                    elif role.startswith("assistant_Gemini"):
+                        avatar_path = "resources/images/gemini.png"
                     elif role.startswith("assistant"):
                         avatar_path = ""
                     else:
@@ -178,6 +180,7 @@ class MessageWidget(QWidget):
         self.render_content()
 
         # 设置基础样式（使用集中管理的样式）
+        self.base_style = ""  # 存储基础样式字符串
         self.apply_base_style(role, is_thinking)
 
         # 外部链接开启
@@ -206,7 +209,7 @@ class MessageWidget(QWidget):
 
                     # 找到按钮元素并更新文本
                     cursor = self.content_browser.cursorForPosition(pos)
-                    cursor.select(QTextCursor.BlockUnderCursor)
+                    cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
                     block_text = cursor.selectedText()
 
                     if "复制" in block_text:
@@ -301,21 +304,44 @@ class MessageWidget(QWidget):
         else:
             style_key = "default"
 
-        # 应用样式 - 添加数学公式支持
-        base_style = (
-            MESSAGE_BASE_STYLES[style_key]
-            + """
-            img {
-                display: inline-block !important;  /* 行内公式强制显示 */
-                max-width: 100% !important;
-                height: auto !important;
-                vertical-align: middle !important;
-                background-color: white !important;
-                border: 1px solid red !important;  /* 临时添加红色边框，验证是否加载 */
-            }
-        """
-        )
-        self.content_browser.setStyleSheet(base_style)
+        # 将完整的样式字符串存储起来
+        self.base_style = MESSAGE_BASE_STYLES[style_key]
+
+        # 应用样式
+        self.update_style()
+
+    def update_style(self, new_bg_color=None, new_bd_color=None):
+        """根据基础样式和新的背景色/边框色来更新最终样式（重构版）"""
+
+        if self.base_style:
+            style_without_comments = re.sub(
+                r"/\*.*?\*/", "", self.base_style, flags=re.DOTALL
+            )
+        else:
+            style_without_comments = "QTextBrowser {}"  # 提供一个默认空样式
+
+        style_parts = []
+        start = style_without_comments.find("{")
+        end = style_without_comments.rfind("}")  # 使用 rfind 更安全
+
+        if start != -1 and end != -1:
+            inner_style = style_without_comments[start + 1 : end].strip()
+            style_parts = [s.strip() for s in inner_style.split(";") if s.strip()]
+
+        if new_bg_color:
+            update_or_add_style_property(
+                style_parts, "background-color:", f"background-color: {new_bg_color}"
+            )
+
+        if new_bd_color:
+            update_or_add_style_property(
+                style_parts, "border:", f"border: 1px solid {new_bd_color}"
+            )
+
+        # 重新构建完整的样式字符串
+        final_style = "QTextBrowser {" + "; ".join(style_parts) + ";}"
+        self.content_browser.setStyleSheet(final_style)
+        # print(final_style)
 
     def set_content(self, content):
         """单纯的设置内容"""
@@ -334,8 +360,14 @@ class MessageWidget(QWidget):
 
     def __del__(self):
         """确保定时器在对象销毁时停止"""
-        if hasattr(self, "height_adjust_timer") and self.height_adjust_timer.isActive():
-            self.height_adjust_timer.stop()
+        try:
+            if (
+                hasattr(self, "height_adjust_timer")
+                and self.height_adjust_timer.isActive()
+            ):
+                self.height_adjust_timer.stop()
+        except:
+            pass
 
     def adjust_height(self):
         """根据内容自动调整高度，增加安全检查"""
@@ -376,8 +408,8 @@ class MessageWidget(QWidget):
 
             if at_bottom and not self.message_display.slider_upwards:
                 # 很快先滚一次，稍长延迟后再滚一次，确保高度更新完成
-                QTimer.singleShot(50, self.message_display.scroll_to_bottom)
-                QTimer.singleShot(150, self.message_display.scroll_to_bottom)
+                QTimer.singleShot(50, self.message_display.request_scrolling)
+                QTimer.singleShot(150, self.message_display.request_scrolling)
 
         except (RuntimeError, AttributeError) as e:
             print(f"Height adjustment error: {e}")

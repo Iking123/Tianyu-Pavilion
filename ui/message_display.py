@@ -1,7 +1,8 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QSizePolicy
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QTextCursor
+from PyQt6.QtGui import QTextCursor, QColor
 from .qtext_message_widget import MessageWidget
+from .components import ScrollToBottomButton
 
 
 class MessageDisplayArea(QWidget):
@@ -13,6 +14,12 @@ class MessageDisplayArea(QWidget):
         self.search_matches = []  # 存储搜索匹配项
         self.current_match_index = -1  # 当前匹配索引
         self.current_assistant_widget = None  # 当前助手消息控件
+
+        # 创建滚动到底部按钮
+        self.scroll_to_bottom_button = ScrollToBottomButton(
+            self, tip="滚动到底部", callback=self.scroll_to_bottom
+        )
+        self.scroll_to_bottom_button.hide()  # 初始隐藏
 
     def init_ui(self):
         layout = QVBoxLayout(self)
@@ -45,6 +52,9 @@ class MessageDisplayArea(QWidget):
             )
         )
 
+        # 连接滚动条变化信号以更新按钮显示状态
+        scrollbar.valueChanged.connect(self.update_scroll_button_visibility)
+
         # 创建容器
         self.container = QWidget()
         self.container_layout = QVBoxLayout(self.container)
@@ -55,33 +65,85 @@ class MessageDisplayArea(QWidget):
         self.scroll_area.setWidget(self.container)
         layout.addWidget(self.scroll_area)
 
-    def set_slider_upwards(self):
+    def resizeEvent(self, event):
+        """窗口大小改变时重新定位滚动按钮"""
+        super().resizeEvent(event)
+        self.position_scroll_button()
+
+    def position_scroll_button(self):
+        """将滚动按钮定位到下方中央位置"""
+        if hasattr(self, "scroll_to_bottom_button"):
+            # 获取滚动区域的几何信息
+            scroll_rect = self.scroll_area.geometry()
+            button_size = self.scroll_to_bottom_button.size()
+
+            # 计算位置：x为中心，y为下边界向内偏移25像素
+            x = (scroll_rect.left() + scroll_rect.right() - button_size.width()) // 2
+            y = scroll_rect.bottom() - button_size.height() - 25
+
+            self.scroll_to_bottom_button.move(x, y)
+            # 确保按钮在最前面
+            self.scroll_to_bottom_button.raise_()
+
+    def at_bottom(self, rigor=False):
+        """检查是否在底部（若并非严格模式，则允许小的误差）"""
         scrollbar = self.scroll_area.verticalScrollBar()
-        if scrollbar.value() < scrollbar.maximum():
+        return scrollbar.value() >= scrollbar.maximum() - (0 if rigor else 5)
+
+    def update_scroll_button_visibility(self):
+        """更新滚动按钮的显示状态"""
+        if not hasattr(self, "scroll_to_bottom_button"):
+            return
+
+        if self.at_bottom():
+            self.scroll_to_bottom_button.hide()
+        else:
+            self.scroll_to_bottom_button.show()
+            self.position_scroll_button()
+
+    def set_slider_upwards(self):
+        if not self.at_bottom(True):
             self.slider_upwards = True
 
     def keyPressEvent(self, event):
         super().keyPressEvent(event)
-        if event.key() == Qt.Key_Up:
-            self.set_slider_upwards()
+        if event.key() == Qt.Key.Key_Up:
+            self.slider_upwards = True
+        elif event.key() == Qt.Key.Key_Down:
+            self.slider_upwards = False
 
     def keyReleaseEvent(self, event):
         super().keyReleaseEvent(event)
-        if event.key() == Qt.Key_Up:
+        if event.key() == Qt.Key.Key_Up:
             QTimer.singleShot(1500, lambda: setattr(self, "slider_upwards", False))
 
     def wheelEvent(self, event):
         super().wheelEvent(event)
         delta = event.angleDelta().y()
         if delta > 0:
-            self.set_slider_upwards()
+            self.slider_upwards = True
             QTimer.singleShot(1500, lambda: setattr(self, "slider_upwards", False))
+        else:
+            self.slider_upwards = False
+
+    def add_widget(
+        self, widget, alignment=Qt.AlignmentFlag.AlignHCenter, auto_scroll=True
+    ):
+        """添加控件"""
+        self.container_layout.addWidget(widget, alignment=alignment)
+        if auto_scroll:
+            QTimer.singleShot(300, self.request_scrolling)  # 延迟滚动确保布局完成
+        # 延迟更新按钮状态，确保布局完成后再检查
+        QTimer.singleShot(350, self.update_scroll_button_visibility)
+        return widget
 
     def add_message(self, widget, auto_scroll=True):
         """添加消息组件"""
         self.container_layout.addWidget(widget)
         if auto_scroll:
-            QTimer.singleShot(300, self.scroll_to_bottom)  # 延迟滚动确保布局完成
+            QTimer.singleShot(300, self.request_scrolling)  # 延迟滚动确保布局完成
+        # 延迟更新按钮状态，确保布局完成后再检查
+        QTimer.singleShot(350, self.update_scroll_button_visibility)
         return widget
 
     def add_message_by_role(self, role, content, is_thinking=False, auto_scroll=True):
@@ -138,12 +200,22 @@ class MessageDisplayArea(QWidget):
                     widget.height_adjust_timer.stop()
                 widget.deleteLater()
 
-    def scroll_to_bottom(self):
-        """滚动到底部，若用户最近操作了滚动条则不滚动"""
+        # 清除消息后更新按钮状态
+        QTimer.singleShot(100, self.update_scroll_button_visibility)
+
+    def request_scrolling(self):
+        """请求滚动到底部，若用户最近往上滚了则不滚动"""
         if self.slider_upwards:
             return
+        self.scroll_to_bottom()
+
+    def scroll_to_bottom(self):
+        """滚动到底部"""
         scrollbar = self.scroll_area.verticalScrollBar()
         scrollbar.setValue(scrollbar.maximum())
+        # 滚动后立即更新按钮状态
+        QTimer.singleShot(100, self.update_scroll_button_visibility)
+        self.slider_upwards = False
 
     def get_all_messages(self):
         """获取所有消息控件"""
@@ -211,7 +283,7 @@ class MessageDisplayArea(QWidget):
         # 高亮匹配项
         cursor = widget.content_browser.textCursor()
         cursor.setPosition(position)
-        cursor.setPosition(position + length, QTextCursor.KeepAnchor)
+        cursor.setPosition(position + length, QTextCursor.MoveMode.KeepAnchor)
         widget.content_browser.setTextCursor(cursor)
 
         # 获取精确的Y坐标
@@ -260,9 +332,9 @@ class MessageDisplayArea(QWidget):
     def get_last_message(self):
         """获取最后一条消息"""
         count = self.container_layout.count()
-        if count > 0:
-            item = self.container_layout.itemAt(count - 1)
-            if item and item.widget():
+        for i in range(count - 1, -1, -1):
+            item = self.container_layout.itemAt(i)
+            if item and item.widget() and isinstance(item.widget(), MessageWidget):
                 return item.widget()
         return None
 
@@ -276,6 +348,18 @@ class MessageDisplayArea(QWidget):
             else:
                 break
 
+        # 移除消息后更新按钮状态
+        QTimer.singleShot(100, self.update_scroll_button_visibility)
+
     def add_search_result(self, result):
         """添加搜索结果到聊天界面"""
         self.add_message_by_role("system", f"网络搜索结果:\n{result}")
+
+    def set_all_message_background(self, bg_color, bd_color=None):
+        """设置所有消息的背景色。"""
+        if bg_color and not bd_color:
+            bd_color = QColor(bg_color).darker(110).name()
+        messages = self.get_all_messages()
+        for message_widget in messages:
+            # 调用 MessageWidget 的更新方法
+            message_widget.update_style(new_bg_color=bg_color, new_bd_color=bd_color)

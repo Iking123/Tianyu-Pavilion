@@ -10,7 +10,7 @@ else:
     HARDCODED_FICTIONS = []
 
 # 小说信息加密文件路径
-FICTIONS_ENC_PATH = "fictions.enc"
+FICTIONS_ENC_PATH = "enc/fictions.enc"
 
 
 def _load_fictions():

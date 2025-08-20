@@ -79,11 +79,6 @@ class ChatPage(QWidget):
         )
         layout.addWidget(self.chat_component)
 
-        # # 连接滚动按钮
-        # if self.main_window:
-        #     scroll_button = self.main_window.get_scroll_button()
-        #     scroll_button.clicked.connect(self.chat_component.scroll_to_bottom)
-
     def go_back(self):
         """返回主页"""
         if self.main_window:

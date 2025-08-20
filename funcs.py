@@ -167,3 +167,12 @@ def create_circular_icon(icon_path):
     painter.end()
 
     return QIcon(result)
+
+
+def update_or_add_style_property(style_parts, prefix, new_line):
+    """一个辅助函数，用于更新或添加样式属性"""
+    for i, part in enumerate(style_parts):
+        if part.strip().startswith(prefix):
+            style_parts[i] = new_line
+            return  # 找到并更新后直接返回
+    style_parts.insert(0, new_line)  # 如果没找到，就添加到列表开头

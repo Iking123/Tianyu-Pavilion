@@ -6,28 +6,27 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from translate import TRANSLATE
 
 # 配置文件路径（加密后）
-CONFIG_ENC_PATH = "config.enc"
+CONFIG_ENC_PATH = "enc/config.enc"
 # 密钥文件路径（安全存储）
-KEY_PATH = "config.key"
+KEY_PATH = "enc/config.key"
 
 # 默认配置
 DEFAULT_CONFIG = {
-    "version": "1.0",
+    "version": "1.01",
     "deepseek_api_key": "",
     "volcengine_api_key": "",
+    "gemini_api_key": "",
     "tavily_api_key": "",
     "username": "",
-    "enable_r1": False,
     "enable_tavily": False,
-    "enable_baidu": True,
+    "enable_baidu": "自动",
     "speed_slider": 8,
     "model": "deepseek-chat",
+    "thinking_type": "disabled",
 }
-
-# 真正的版本
-VERSION = "1.0"
 
 # 全局配置变量（单例）
 _config = None
@@ -96,10 +95,6 @@ def get_config(key=None):
     """获取配置（支持加密存储）"""
     global _config
 
-    # 检查配置是否需要更新
-    if _config and _config["version"] != VERSION:
-        _config = None
-
     # 加载配置
     if _config is None:
         # 如果加密配置文件不存在，创建默认配置
@@ -110,6 +105,12 @@ def get_config(key=None):
         with open(CONFIG_ENC_PATH, "rb") as f:
             encrypted_data = f.read()
             _config = _decrypt_config(encrypted_data)
+
+    # 检查是否需要更新（用硬编码的默认值更新）
+    if _config["version"] != DEFAULT_CONFIG["version"]:
+        _config = {**DEFAULT_CONFIG, **_config}
+        _config["version"] = DEFAULT_CONFIG["version"]
+        update_config(_config)
 
     return _config if key is None else _config.get(key, None)
 
@@ -124,23 +125,36 @@ def get_username(show_developer=True):
     )
 
 
-def get_model():
+def get_model() -> str:
     """获取现在的模型"""
     return get_config("model")
+
+
+def get_model_name2():
+    """获取现在的模型的另一种名称"""
+    name = ""
+    model = get_model()
+    if model == "deepseek-reasoner":
+        name = "DeepSeek-R1"
+    elif model == "deepseek-chat":
+        name = "DeepSeek-V3"
+    elif model == "doubao-seed-1-6-thinking-250715":
+        name = "Doubao-Seed-1.6-thinking"
+    elif model == "doubao-seed-1-6-250615":
+        name = "Doubao-Seed-1.6"
+    elif model == "gemini-2.5-pro":
+        name = "Gemini 2.5 Pro"
+    elif model == "gemini-2.5-flash":
+        name = "Gemini 2.5 Flash"
+    elif model == "gemini-2.5-flash-lite":
+        name = "Gemini 2.5 Flash-Lite"
+    return name
 
 
 def get_assist(nature=False):
     """获取现在的助手名"""
     model = get_model()
-    name = ""
-    if model == "deepseek-reasoner":
-        name = "assistant_DeepSeek-R1"
-    elif model == "deepseek-chat":
-        name = "assistant_DeepSeek-V3"
-    elif model == "doubao-seed-1-6-thinking-250715":
-        name = "assistant_豆包1.6 Thinking"
-    elif model == "doubao-seed-1-6-250615":
-        name = "assistant_豆包1.6"
+    name = TRANSLATE.get(model, "")
     return name[10:] if nature else name
 
 
@@ -157,7 +171,11 @@ def get_api_key():
     model = get_model()
     if model.startswith("deepseek"):
         return get_config("deepseek_api_key")
-    return get_config("volcengine_api_key")
+    elif model.startswith("doubao"):
+        return get_config("volcengine_api_key")
+    elif model.startswith("gemini"):
+        return get_config("gemini_api_key")
+    return ""
 
 
 def get_system_prompt():
@@ -166,8 +184,11 @@ def get_system_prompt():
     prompt = "你是一个智能助手，在一个个人平台上与用户交流。"
 
     # 根据配置添加百度搜索说明
-    if get_config("enable_baidu"):
+    baidu_config = get_config("enable_baidu")
+    if baidu_config == "自动":
         prompt += "若用户提问涉及最新信息，则平台可能会为你提供百度搜索的简要结果。"
+    elif baidu_config == "开":
+        prompt += "对于用户的每次提问，平台都会为你提供百度搜索的简要结果。"
 
     # 根据配置添加Tavily搜索说明
     if get_config("enable_tavily"):

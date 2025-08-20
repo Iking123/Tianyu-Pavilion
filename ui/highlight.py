@@ -1,4 +1,4 @@
-from PyQt6.QtCore import Qt, QRegularExpression
+from PyQt6.QtCore import QRegularExpression
 from PyQt6.QtGui import QTextCharFormat, QSyntaxHighlighter, QBrush, QColor
 
 
@@ -22,11 +22,15 @@ class SearchHighlighter(QSyntaxHighlighter):
         if not self.search_term:
             return
 
-        # 不区分大小写的搜索
-        regex = QRegularExpression(self.search_term, Qt.CaseSensitivity.CaseInsensitive)
-        index = regex.indexIn(text)
+        # 不区分大小写的搜索 - 使用 PatternOption
+        regex = QRegularExpression(
+            self.search_term, QRegularExpression.PatternOption.CaseInsensitiveOption
+        )
 
-        while index >= 0:
-            length = regex.matchedLength()
-            self.setFormat(index, length, self.highlight_format)
-            index = regex.indexIn(text, index + length)
+        # 使用 globalMatch() 方法进行匹配（PyQt6 推荐方式）
+        iterator = regex.globalMatch(text)
+        while iterator.hasNext():
+            match = iterator.next()
+            start = match.capturedStart()
+            length = match.capturedLength()
+            self.setFormat(start, length, self.highlight_format)

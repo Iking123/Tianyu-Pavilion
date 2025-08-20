@@ -422,7 +422,7 @@ class CharacterEditDialog(QDialog):
         self.name_input.setText(self.character.get("name", ""))
         self.name_input.setMaxLength(50)
         self.name_input.setToolTip("至多50个字符")
-        form_layout.addRow("角色名称:", self.name_input)
+        form_layout.addRow("角色名称<span style='color:red'>*</span>:", self.name_input)
 
         # 性别
         self.gender_combo = QComboBox()
@@ -430,8 +430,8 @@ class CharacterEditDialog(QDialog):
             [
                 "男",
                 "女",
-                "无性",
-                "双性",
+                "无",
+                "双",
                 "MtF",
                 "FtM",
                 "酷儿",
