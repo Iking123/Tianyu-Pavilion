@@ -1,5 +1,5 @@
 # 天语阁
-天语阁是一个基于PyQt6开发的桌面应用，允许用户使用大模型来进行对话、趣味写作，或者进行交互小说互动。
+天语阁是一个基于PyQt6开发的桌面应用，允许用户使用大模型来进行对话、趣味写作，还有交互小说互动。
 
 目前支持的LLM有：DeepSeek，豆包1.8，Gemini 3 Flash，Gemini 2.5 Flash，Gemini 2.5 Flash-Lite，Mistral Large 3，GLM-4.7-Flash。
 

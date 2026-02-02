@@ -16,6 +16,7 @@ data/
 test_*
 tb.py
 formula_cache/
+chat_histories/
 ex_*
 fuck.py
 
