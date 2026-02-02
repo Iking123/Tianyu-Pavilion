@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.backends.backend_svg import FigureCanvasSVG
 from matplotlib.backends.backend_agg import FigureCanvasAgg
-import urllib.parse
 import markdown
 import textwrap
 from markdown.extensions.fenced_code import FencedCodeExtension
@@ -14,7 +13,6 @@ from markdown.extensions.tables import TableExtension
 from .markdown_extensions import HighlightCodeExtension
 from bs4 import BeautifulSoup
 from PyQt6.QtCore import QUrl
-import numpy as np
 
 # 创建缓存目录
 CACHE_DIR = os.path.join(os.getcwd(), "formula_cache")
@@ -238,6 +236,26 @@ def get_cache_info():
 
 
 def markdown_to_html(content):
+    # print(content)
+
+    # 预处理：查找并修复被缩进的“围栏代码块”。
+    # 这个问题会导致 Markdown 解析器将它们错误地识别为“缩进代码块”，
+    # 从而绕过了我们自定义的 FencedCodeExtension 和 HighlightCodeExtension。
+    # 我们通过 textwrap.dedent 来移除这些代码块的公共前导空格。
+    def dedent_fenced_code_block(match):
+        return textwrap.dedent(match.group(0))
+
+    # 这个正则表达式会匹配整个围栏代码块（从 ``` 到 ```），包括被缩进的情况。
+    # re.DOTALL 使得 '.' 可以匹配换行符。
+    # re.MULTILINE 使得 '^' 和 '$' 可以匹配每一行的开头和结尾。
+    content = re.sub(
+        r"^[ ]*(`{3,}|~{3,}).*?^[ ]*\1[ ]*$",
+        dedent_fenced_code_block,
+        content,
+        flags=re.DOTALL | re.MULTILINE,
+    )
+    # print(content)
+
     content = textwrap.dedent(content)
 
     # 插入空行以支持段落直接衔接无序列表
@@ -286,7 +304,6 @@ def markdown_to_html(content):
         <div style="
             font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
             font-size: 11pt;
-            color: #333;
             line-height: 1.2;
             padding: 15px;
             border: 1px solid #ffcccc;
@@ -323,14 +340,16 @@ def markdown_to_html(content):
     # 添加强化的CSS样式和JavaScript复制功能
     return f"""
     <style>
-        /* 基础样式 */
-        body {{
-            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-            font-size: 11pt;
-            color: #333;
+        p {{
             line-height: 1.2;
-            margin: 0;
-            padding: 0;
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+        }}
+        
+        /* 行内代码 */
+        code {{
+            font-family: 'HYQiHei' !important;
+            background: transparent !important;
         }}
         
         /* 代码块容器 - 使用 table 选择器 */
@@ -447,7 +466,6 @@ def markdown_to_html(content):
         .math-fallback {{
             font-family: 'Times New Roman', serif;
             font-style: italic;
-            color: #333;
         }}
         
         .math-fallback.inline {{
@@ -535,7 +553,6 @@ def markdown_to_html(content):
     <div style="
         font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
         font-size: 11pt;
-        color: #333;
         line-height: 1.2;
     ">
         {html}

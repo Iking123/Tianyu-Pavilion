@@ -2,7 +2,7 @@ import re
 import json
 from PyQt6.QtCore import QThread, pyqtSignal
 import requests
-from core.config_manager import get_model, get_api_key, get_base_url
+from core.config_manager import get_config, get_model, get_api_key, get_base_url
 
 
 class IdiomWorker(QThread):
@@ -30,16 +30,37 @@ class IdiomWorker(QThread):
 
             # 构造对话历史
             messages = [
-                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": self.system_prompt},
             ]
 
+            model_name = get_model()
             payload = {
-                "model": get_model(),
+                "model": model_name,
                 "messages": messages,
                 "response_format": {"type": "json_object"},
                 "temperature": 0.3,
                 "stream": True,  # 启用流式传输
             }
+
+            if model_name.startswith("doubao"):
+                payload["thinking"] = {
+                    "type": (
+                        "disabled"
+                        if get_config("reasoning_effort") == "minimal"
+                        else "enabled"
+                    )
+                }
+                payload["reasoning"] = {"effort": get_config("reasoning_effort")}
+
+            enable_thinking = get_config("enable_thinking")
+            if model_name.startswith("deepseek"):
+                model_name = payload["model"] = (
+                    "deepseek-reasoner" if enable_thinking else "deepseek-chat"
+                )
+            if model_name == "glm-4.5-flash":
+                payload["thinking"] = {
+                    "type": "enabled" if enable_thinking else "disabled"
+                }
 
             response = requests.post(
                 f"{get_base_url()}/chat/completions",
@@ -68,6 +89,7 @@ class IdiomWorker(QThread):
                             chunk = json.loads(json_data)
                             if "choices" in chunk and chunk["choices"]:
                                 delta = chunk["choices"][0].get("delta", {})
+                                print(delta)
                                 reasoning = delta.get("reasoning_content", "")
                                 content = delta.get("content", "")
 
@@ -79,6 +101,12 @@ class IdiomWorker(QThread):
 
                                 elif content:
                                     # 处理回复内容
+                                    if (
+                                        not full_response
+                                        and content == "\n"
+                                        and model_name.startswith("glm")
+                                    ):  # 抽象GLM有时会先出来一个换行符回复内容，忽略掉
+                                        continue
                                     full_response += content
                         except json.JSONDecodeError:
                             continue

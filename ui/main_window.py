@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QFont
 from core.config_manager import get_config, get_model_name2, update_config
+from funcs import get_screen_height
 from translate import TRANSLATE
 from .home_page import HomePage
 from .styles import *
@@ -24,7 +25,11 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("天语阁")
-        self.setGeometry(100, 80, 1720, 1720)
+
+        screen_height = get_screen_height()
+        side = int(screen_height * 0.95)
+        margin = int(screen_height * 0.05)
+        self.setGeometry(margin, margin, side, side)
 
         # 主部件
         central_widget = QWidget()
@@ -63,6 +68,7 @@ class MainWindow(QMainWindow):
         self.writing_pages = {}
 
         # 默认显示主页
+        self.page_index = 0
         self.switch_page(0)
 
     def init_status_bar(self):
@@ -85,30 +91,40 @@ class MainWindow(QMainWindow):
         separator.setStyleSheet("color: #999; margin: 0 5px;")
         left_layout.addWidget(separator)
 
-        # 添加下拉选择框、按钮等等
-        self.thinking_combobox = QComboBox()
-        self.thinking_combobox.setView(QListView())
-        self.thinking_combobox.addItems(
-            ["深度思考：自动", "深度思考：开", "深度思考：关闭"]
+        # 添加按钮、下拉选择框等等
+        self.btn_thinking = QPushButton("深度思考")
+        self.btn_thinking.setCheckable(True)
+        self.btn_thinking.setChecked(get_config("enable_thinking"))
+        self.btn_thinking.setStyleSheet(
+            self.get_button_style(get_config("enable_thinking"))
         )
-        self.thinking_combobox.setMaximumWidth(245)
-        self.thinking_combobox.setCurrentText(
-            "深度思考：" + TRANSLATE.get(str(get_config("thinking_type")), "关闭")
+        self.btn_thinking.setMaximumWidth(125)
+        self.btn_thinking.clicked.connect(self.toggle_thinking)
+        left_layout.addWidget(self.btn_thinking)
+
+        self.reasoning_combobox = QComboBox()
+        self.reasoning_combobox.setView(QListView())
+        self.reasoning_combobox.addItems(
+            ["思考程度：无", "思考程度：低", "思考程度：中", "思考程度：高"]
         )
-        self.thinking_combobox.currentIndexChanged.connect(self.change_thinking)
-        left_layout.addWidget(self.thinking_combobox)
+        self.reasoning_combobox.setMaximumWidth(245)
+        self.reasoning_combobox.setCurrentText(
+            "思考程度：" + TRANSLATE.get(str(get_config("reasoning_effort")), "关闭")
+        )
+        self.reasoning_combobox.currentIndexChanged.connect(self.change_thinking)
+        left_layout.addWidget(self.reasoning_combobox)
 
         self.model_combobox = QComboBox()
         self.model_combobox.setView(QListView())
         self.model_combobox.addItems(
             [
-                "DeepSeek-R1",
-                "DeepSeek-V3",
-                "Doubao-Seed-1.6-thinking",
-                "Doubao-Seed-1.6",
-                "Gemini 2.5 Pro",
+                "DeepSeek-V3.2",
+                "Doubao-Seed-1.8",
+                "Gemini 3 Flash",
                 "Gemini 2.5 Flash",
                 "Gemini 2.5 Flash-Lite",
+                "GLM-4.7-Flash",
+                "Mistral Large 3",
             ]
         )
         self.model_combobox.setMaximumWidth(385)
@@ -117,10 +133,17 @@ class MainWindow(QMainWindow):
         self.model_combobox.currentIndexChanged.connect(self.change_model)
         left_layout.addWidget(self.model_combobox)
 
-        self.thinking_combobox.setVisible(
+        self.btn_thinking.setVisible(
             model_name
-            in ["Doubao-Seed-1.6", "Gemini 2.5 Flash", "Gemini 2.5 Flash-Lite"]
+            in [
+                "Gemini 3 Flash",
+                "Gemini 2.5 Flash",
+                "Gemini 2.5 Flash-Lite",
+                "DeepSeek-V3.2",
+                "GLM-4.7-Flash",
+            ]
         )
+        self.reasoning_combobox.setVisible(model_name.startswith("Doubao"))
 
         self.btn_tavily = QPushButton("Tavily")
         self.btn_tavily.setCheckable(True)
@@ -148,19 +171,26 @@ class MainWindow(QMainWindow):
 
     def change_model(self, index):
         new_config = get_config()
-        model_text = self.model_combobox.currentText()
-        new_config["model"] = TRANSLATE.get(model_text)
+        model_name = self.model_combobox.currentText()
+        new_config["model"] = TRANSLATE.get(model_name)
         update_config(new_config)
-        self.thinking_combobox.setVisible(
-            new_config["model"]
-            in ["doubao-seed-1-6-250615", "gemini-2.5-flash", "gemini-2.5-flash-lite"]
+        self.btn_thinking.setVisible(
+            model_name
+            in [
+                "Gemini 3 Flash",
+                "Gemini 2.5 Flash",
+                "Gemini 2.5 Flash-Lite",
+                "DeepSeek-V3.2",
+                "GLM-4.7-Flash",
+            ]
         )
+        self.reasoning_combobox.setVisible(model_name.startswith("Doubao"))
         self.update_status()
 
     def change_thinking(self, index):
         new_config = get_config()
-        thinking_text = self.thinking_combobox.currentText()
-        new_config["thinking_type"] = TRANSLATE.get(thinking_text[5:])
+        thinking_text = self.reasoning_combobox.currentText()
+        new_config["reasoning_effort"] = TRANSLATE.get(thinking_text[5:])
         update_config(new_config)
         self.update_status()
 
@@ -199,6 +229,16 @@ class MainWindow(QMainWindow):
                     font-size: 10pt !important;
                 }
             """
+
+    def toggle_thinking(self):
+        """切换一些模型的深度思考状态"""
+        new_config = get_config()
+        new_config["enable_thinking"] = not new_config["enable_thinking"]
+        update_config(new_config)
+        self.btn_thinking.setChecked(new_config["enable_thinking"])
+        self.btn_thinking.setStyleSheet(
+            self.get_button_style(new_config["enable_thinking"])
+        )
 
     def toggle_tavily(self):
         """切换 Tavily 搜索状态"""
@@ -271,6 +311,8 @@ class MainWindow(QMainWindow):
                 self.character_editor = CharacterEditor(self)
                 self.stacked_widget.addWidget(self.character_editor)
             self.stacked_widget.setCurrentWidget(self.character_editor)
+
+        self.page_index = index
 
     def set_status(self, message):
         """设置状态栏消息"""

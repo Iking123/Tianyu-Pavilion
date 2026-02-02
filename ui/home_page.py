@@ -9,7 +9,13 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QFont, QColor, QPainter, QPixmap
 from PyQt6.QtCore import Qt, QPoint, QPropertyAnimation, QEasingCurve
-from funcs import resource_path
+from funcs import get_screen_height, resource_path
+
+
+class NoneBackgroundWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setStyleSheet("background: none !important;")
 
 
 class HomePage(QWidget):
@@ -22,12 +28,16 @@ class HomePage(QWidget):
 
     def setup_ui(self):
         # 主布局
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(30, 30, 30, 30)
-        layout.setSpacing(20)
+        grid_layout = QGridLayout(self)
+
+        screen_height = get_screen_height()
+        grid_layout.setSpacing(int(screen_height * 0.02))
+        margin = int(screen_height * 0.11)
+        grid_layout.setContentsMargins(margin, 0, margin, 0)
 
         # 标题区域
-        title_layout = QVBoxLayout()
+        self.title_area = NoneBackgroundWidget()
+        title_layout = QVBoxLayout(self.title_area)
         title_label = QLabel("天语阁")
         title_label.setFont(QFont("DFPShaoNvW5-GB", 48, QFont.Weight.Bold))
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -43,19 +53,11 @@ class HomePage(QWidget):
             f"color: silver; margin-bottom: 40px; font-family: '.Heiti J' !important;"
         )
 
-        empty_space = QWidget()
-
         title_layout.addWidget(title_label)
         title_layout.addWidget(subtitle_label)
+        empty_space = NoneBackgroundWidget()
         title_layout.addWidget(empty_space)
-        layout.addLayout(title_layout)
-
-        layout.addSpacing(255)
-
-        # 功能按钮网格布局
-        grid_layout = QGridLayout()
-        grid_layout.setSpacing(50)
-        grid_layout.setContentsMargins(200, 0, 200, 0)
+        grid_layout.addWidget(self.title_area, 0, 0, 1, -1)
 
         # 创建所有按钮
         self.chat_btn = self.create_circle_button("聊天", "#62B4EB")
@@ -65,15 +67,12 @@ class HomePage(QWidget):
         self.character_btn = self.create_circle_button("角色编辑器", "#8F97BB")
         self.settings_btn = self.create_circle_button("设置", "#95a5a6")
 
-        grid_layout.addWidget(self.chat_btn, 0, 0)
-        grid_layout.addWidget(self.creative_btn, 0, 1)
-        grid_layout.addWidget(self.game_btn, 0, 2)
-        grid_layout.addWidget(self.interactive_btn, 1, 0)
-        grid_layout.addWidget(self.character_btn, 1, 1)
-        grid_layout.addWidget(self.settings_btn, 1, 2)
-
-        layout.addLayout(grid_layout)
-        layout.addStretch(1)
+        grid_layout.addWidget(self.chat_btn, 1, 0)
+        grid_layout.addWidget(self.creative_btn, 1, 1)
+        grid_layout.addWidget(self.game_btn, 1, 2)
+        grid_layout.addWidget(self.interactive_btn, 2, 0)
+        grid_layout.addWidget(self.character_btn, 2, 1)
+        grid_layout.addWidget(self.settings_btn, 2, 2)
 
         # 连接信号
         self.chat_btn.clicked.connect(lambda: self.switch_to_page(1))
@@ -89,6 +88,15 @@ class HomePage(QWidget):
 
         # 设置动画效果
         self.setup_animations()
+
+        # 页脚区域（设置成与标题区域所占空间相同）
+        self.footer_area = NoneBackgroundWidget()
+        grid_layout.addWidget(self.footer_area, 3, 0, 1, -1)
+
+        grid_layout.setRowStretch(0, 27)
+        grid_layout.setRowStretch(1, 7)
+        grid_layout.setRowStretch(2, 7)
+        grid_layout.setRowStretch(3, 29)
 
     def create_circle_button(self, text="", color="#95a5a6"):
         """创建带阴影的圆形按钮"""
@@ -115,32 +123,6 @@ class HomePage(QWidget):
         darker_color = base_color.darker(110)
         lighter_color = base_color.lighter(130)
 
-        # # 提取颜色的RGB值（0-255范围）
-        # r1, g1, b1, _ = lighter_color.getRgb()
-        # r2, g2, b2, _ = darker_color.getRgb()
-
-        # button.setStyleSheet(
-        #     f"""
-        #     QPushButton {{
-        #         background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        #             stop:0 rgba({r1}, {g1}, {b1}, {0.8}),
-        #             stop:1 rgba({r2}, {g2}, {b2}, {0.8}));
-        #         border-radius: 100px;
-        #         border: 2px solid rgba(255, 255, 255, 0.3);
-        #         color: white;
-        #         font-weight: bold;
-        #         text-align: center;
-        #         border-image: url({img_path}) 0 0 0 0 stretch stretch;
-        #     }}
-        #     QPushButton:hover {{
-        #         background-color: {base_color.name()};
-        #         border: 2px solid #FFFF00;
-        #     }}
-        #     QPushButton:pressed {{
-        #         background-color: {darker_color.name()};
-        #     }}
-        # """
-        # )
         button.setStyleSheet(
             f"""
             QPushButton {{

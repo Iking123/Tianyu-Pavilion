@@ -59,7 +59,7 @@ class FictionParser:
 
             # 检查是否有段落结束
             if "\n" in self.buffer:
-                res, self.buffer = self.buffer.split("\n", 1)
+                res, self.buffer = split_reserve_sep(self.buffer, "\n", True)
                 messages.extend(self._parse_normal_content(res))
                 self.in_para = False
                 continue
@@ -95,22 +95,25 @@ class FictionParser:
             and check_suffix_condition(self.buffer, "<FAIL>")
         )
 
-    def _parse_normal_content(self, content):
+    def _parse_normal_content(self, content: str):
         """解析普通内容（旁白和对话）"""
+        if not content:
+            return
+
         messages = []
 
         # 按段落分割处理
-        paragraphs = content.split("\n")
+        paragraphs = re.split(r"(\n)", content)
         num = len(paragraphs)
-        for para in paragraphs:
-            para = para
+        for p in paragraphs:
+            para = p
             if not para:
                 continue
 
             # 如果当前有段落，则追加到当前段落中
             if self.in_para:
                 messages.append({"type": "append", "content": para})
-                if num > 1:
+                if para.endswith("\n"):
                     self.in_para = False
                 continue
 
@@ -118,7 +121,7 @@ class FictionParser:
             if para.startswith("@"):
                 parts = para[1:].split("|", 1)
                 if len(parts) == 2:
-                    character = parts[0]
+                    character = parts[0].strip()
                     dialogue = parts[1]
                     messages.append(
                         {

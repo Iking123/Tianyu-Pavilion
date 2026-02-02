@@ -25,7 +25,7 @@ from core.character_manager import (
     delete_character,
     get_character_by_id,
 )
-from core.config_manager import get_assist
+from core.config_manager import get_assist, get_username
 from ui.components import GoBackButton
 from ui.input_panel import CustomTextEdit
 from .character_button import *
@@ -87,32 +87,37 @@ class CharacterEditor(QWidget):
         # === 操作按钮区域 ===
         button_container = QWidget()
         button_layout = QHBoxLayout(button_container)
-        button_layout.setContentsMargins(5, 5, 5, 5)
-        button_layout.setSpacing(10)
+        button_layout.setContentsMargins(0, 0, 0, 0)
+        button_layout.setSpacing(0)
 
         # 添加角色按钮
         self.add_btn = QPushButton("➕ 添加新角色")
+        self.add_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.add_btn.clicked.connect(self.add_new_character)
         button_layout.addWidget(self.add_btn)
 
         # 编辑角色按钮
         self.edit_btn = QPushButton("✏️ 编辑角色")
+        self.edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.edit_btn.clicked.connect(self.toggle_edit_mode)
         self.edit_btn.setCheckable(True)
         button_layout.addWidget(self.edit_btn)
 
         # 删除角色按钮
         self.delete_btn = QPushButton("❌ 删除角色")
+        self.delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.delete_btn.clicked.connect(self.toggle_delete_mode)
         self.delete_btn.setCheckable(True)
         button_layout.addWidget(self.delete_btn)
 
         # 总结角色信息按钮
         self.summary_btn = QPushButton("📝 总结角色信息")
+        self.summary_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.summary_btn.clicked.connect(self.toggle_summary_mode)
         self.summary_btn.setCheckable(True)
         button_layout.addWidget(self.summary_btn)
 
+        button_container.setObjectName("buttonContainer")
         button_container.setStyleSheet(BUTTON_STYLES["option"])
         main_layout.addWidget(button_container)
 
@@ -154,7 +159,7 @@ class CharacterEditor(QWidget):
         )
 
         # 角色列表容器
-        self.character_container = QWidget()
+        self.character_container = QWidget(self.scroll_area)
         self.character_layout = QVBoxLayout(self.character_container)
         self.character_layout.setContentsMargins(0, 0, 0, 0)
         self.character_layout.setSpacing(5)
@@ -394,6 +399,11 @@ class CharacterEditor(QWidget):
             else:
                 QMessageBox.warning(self, "删除失败", "无法删除此角色")
 
+    def showEvent(self, event):
+        """页面显示时自动设置焦点"""
+        super().showEvent(event)
+        self.character_container.setFocus()
+
 
 class CharacterEditDialog(QDialog):
     """角色编辑对话框"""
@@ -438,6 +448,15 @@ class CharacterEditDialog(QDialog):
                 "武装直升机",
                 "沃尔玛购物袋",
                 "秀吉",
+                "扶她",
+                "男Alpha",
+                "女Alpha",
+                "男Beta",
+                "女Beta",
+                "男Omega",
+                "女Omega",
+                "男Enigma",
+                "女Enigma",
                 "其他",
             ]
         )
@@ -484,10 +503,17 @@ class CharacterEditDialog(QDialog):
         form_layout.addRow("兴趣:", self.hobbies_input)
 
         # 背景设定
-        self.background_input = CustomTextEdit(None, 10000)
+        self.background_input = CustomTextEdit(None, 5000)
         self.background_input.setPlaceholderText("描述角色的背景故事...")
         self.background_input.setPlainText(self.character.get("background", ""))
         form_layout.addRow("背景设定:", self.background_input)
+
+        # 外貌设定
+        self.appearance_input = CustomTextEdit(None, 300)
+        self.appearance_input.setPlaceholderText("填写角色的外貌设定...")
+        self.appearance_input.setPlainText(self.character.get("appearance", ""))
+        self.appearance_input.setMaximumHeight(100)
+        form_layout.addRow("外貌设定:", self.appearance_input)
 
         # 问候语
         self.greetings_input = CustomTextEdit(None, 150)
@@ -495,6 +521,14 @@ class CharacterEditDialog(QDialog):
         self.greetings_input.setPlainText(self.character.get("greetings", ""))
         self.greetings_input.setMaximumHeight(100)
         form_layout.addRow("问候语:", self.greetings_input)
+
+        if get_username(False) in ["Iking", "雨落流绮"]:
+            # SP设定
+            self.sp_ps_input = CustomTextEdit(None, 300)
+            self.sp_ps_input.setPlaceholderText("填写角色的SP设定...")
+            self.sp_ps_input.setPlainText(self.character.get("sp_ps", ""))
+            self.sp_ps_input.setMaximumHeight(100)
+            form_layout.addRow("SP设定:", self.sp_ps_input)
 
         # === 头像 ===
         avatar_label = QLabel("头像")
@@ -546,9 +580,12 @@ class CharacterEditDialog(QDialog):
             "personality": self.personality_input.toPlainText().strip(),
             "hobbies": self.hobbies_input.toPlainText().strip(),
             "background": self.background_input.toPlainText().strip(),
+            "appearance": self.appearance_input.toPlainText().strip(),
             "greetings": self.greetings_input.toPlainText().strip(),
             "avatar": self.avatar_input.text().strip(),
         }
+        if (get_username(False) in ["Iking", "雨落流绮"]) and self.sp_ps_input:
+            character_data["sp_ps"] = self.sp_ps_input.toPlainText().strip()
 
         # 保留ID（如果是编辑）
         if "id" in self.character:

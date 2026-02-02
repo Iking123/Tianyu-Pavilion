@@ -10,7 +10,8 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
-from ui.components import GoBackButton, RestartButton
+from funcs import resource_path
+from ui.components import GoBackButton, ImageWidget, RestartButton
 from ui.message_display import MessageDisplayArea
 from ui.input_panel import InputPanel
 from core.config_manager import get_assist
@@ -173,7 +174,7 @@ class IdiomSolitairePage(QWidget):
             "• 接龙时可以使用同音字（发音完全相同，包括音调）\n"
             "• 成语必须是四字词语\n"
             "• 避免重复使用相同成语\n"
-            "• 如果你发现AI错了，请回复“你错啦！”\n（也可以更具体地说“音调错了”之类）"
+            "• 如果你发现AI错了，请回复“你错啦！”\n（也可以更具体地说“你音调错”之类）"
         )
         tips_content.setStyleSheet("color: #7F8C8D;")
         info_layout.addWidget(tips_content)
@@ -195,13 +196,17 @@ class IdiomSolitairePage(QWidget):
         self.used_idioms = set()  # 重置已使用成语记录
         self.game_active = True
         self.input_panel.set_send_enabled(True)
+        self.input_panel.setVisible(True)
         self.status_label.setText("游戏进行中")
         self.status_label.setStyleSheet("color: #2ECC71; font-weight: bold;")
+        self.main_window.set_status("就绪")
 
         # 添加欢迎消息
         self.message_display.clear_messages()
         self.message_display.add_message_by_role(
-            "", "欢迎来到成语接龙游戏！请你说出第一个四字成语开始游戏。"
+            "",
+            """**欢迎来到成语接龙游戏！请你说出第一个四字成语开始游戏。**
+*请注意：在这场游戏中，无论是否开启网络搜索功能（百度和Tavily），天语阁都不会让AI联网，以此确保AI不作弊~*""",
         )
 
         # 不再由AI先开始，等待用户输入
@@ -338,7 +343,7 @@ class IdiomSolitairePage(QWidget):
                     # AI认输或指出玩家错误
                     self.end_game(player_win, conclusions)
             elif respondent_idiom:
-                # AI正常接龙
+                # AI接龙错误时，直接判玩家胜利
                 if len(respondent_idiom) != 4:
                     self.end_game(True, f"AI返回的成语'{respondent_idiom}'不是四字")
                     return
@@ -391,17 +396,15 @@ class IdiomSolitairePage(QWidget):
     def handle_ai_error(self, error_msg):
         """处理API错误 - 恢复状态并允许用户重试"""
         # 移除最后1~2条消息：用户消息和AI的等待消息（若有）
+        last_message = self.message_display.get_last_message()
         self.message_display.remove_last_n_messages()
         last_message = self.message_display.get_last_message()
         if last_message and last_message.role == "user":
             self.message_display.remove_last_n_messages()
 
-        # 完成当前助手消息
-        self.finish_assistant_message()
-
         # 从已使用成语中移除用户最新输入的成语
         if self.game_history and self.game_history[-1][0] == "玩家":
-            last_player_idiom = self.game_history[-1][1]
+            last_player_idiom = self.game_history[-1][1][1:5]
             if last_player_idiom in self.used_idioms:
                 self.used_idioms.remove(last_player_idiom)
 
@@ -438,6 +441,7 @@ class IdiomSolitairePage(QWidget):
         """结束游戏并显示结果"""
         self.game_active = False
         self.input_panel.set_send_enabled(False)
+        self.input_panel.setVisible(False)
 
         if player_wins:
             self.status_label.setText("你赢了！")
@@ -447,6 +451,8 @@ class IdiomSolitairePage(QWidget):
                 f"{message or ''}\n"
                 "点击左上角的重来按钮再来一局。"
             )
+            self.main_window.set_status("🏆 已获胜！")
+            e = ImageWidget(resource_path("resources/images/succeed.png"))
         else:
             self.current_idiom = ""
             self.current_idiom_label.setText("")
@@ -457,8 +463,11 @@ class IdiomSolitairePage(QWidget):
                 f"{message or '未知错误'}\n"
                 "点击左上角的重来按钮再试一次！"
             )
+            self.main_window.set_status("😭 你输了...")
+            e = ImageWidget(resource_path("resources/images/fail.png"))
 
         self.message_display.add_message_by_role(get_assist(), end_message)
+        self.message_display.add_widget(e)
         self.message_display.request_scrolling()
 
     def format_history(self):

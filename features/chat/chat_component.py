@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QSplitter, QMessageBox
 from PyQt6.QtCore import Qt, QTimer
 from core.worker import Worker
 from core.config_manager import *
-from funcs import resource_path
+from .chat_history_manager import ChatHistoryManager
 from ui.styles import *
 from ui.search_toolbar import SearchToolbar
 from ui.message_display import MessageDisplayArea
@@ -34,6 +34,8 @@ class ChatComponent(QWidget):
         self.timer = None
         self.worker_active = False
         self.thinking_widget = None
+        self.chat_id = None  # 当前聊天ID
+        self.history_manager = ChatHistoryManager()
         self.init_ui()
 
     def init_ui(self):
@@ -86,25 +88,34 @@ class ChatComponent(QWidget):
         self.search_timer.setSingleShot(True)
         self.search_timer.timeout.connect(self.perform_search)
 
-    #         # 添加测试消息
+        # 添加测试消息
+
     #         test_message = self.message_display.add_message_by_role(
-    #             "assistant_Gemini 2.5 Pro",
-    #             """| 心情值 |
-    # | - |
-    # | -5 | """,
+    #             "character_hidden_dongqi",
+    #             """啊啊啊
+    # 啊啊啊
+
+    # 啊啊啊""",
     #         )
     #         test_message.force_render()
+    #         print(test_message.content_browser.toHtml())
+
+    # self.message_display.add_line()
+    # self.message_display.add_message_by_role("", "啊啊啊")
 
     # self.message_display.set_all_message_background("gold")
     # QTimer.singleShot(
     #     3000, lambda: self.message_display.set_all_message_background("white")
     # )
 
-    # c = ImageWidget(resource_path("resources/images/succeed.png"))
+    # c = ImageWidget()
     # self.message_display.add_widget(c)
 
     def safe_update_time(self):
         """安全更新时间显示"""
+        if not self.ini_msg or not hasattr(self, "initial_msg") or not self.initial_msg:
+            return
+
         try:
             # 直接更新初始消息的内容
             self.initial_msg.set_content(get_system_prompt())
@@ -125,6 +136,9 @@ class ChatComponent(QWidget):
         if not message:
             return
 
+        # 禁用发送按钮
+        self.input_panel.set_send_enabled(False)
+
         # 重要：先停止并清理旧的Worker
         if self.worker and self.worker.isRunning():
             self.worker.stop()
@@ -133,9 +147,6 @@ class ChatComponent(QWidget):
                 self.worker.terminate()  # 强制终止
             self.worker.deleteLater()
             self.worker = None
-
-        # 禁用发送按钮
-        self.input_panel.set_send_enabled(False)
 
         # 设置工作状态
         self.worker_active = True
@@ -159,6 +170,9 @@ class ChatComponent(QWidget):
         )
         self.worker.update_signal.connect(
             self.add_message_content, Qt.ConnectionType.QueuedConnection
+        )
+        self.worker.err_signal.connect(
+            self.display_error, Qt.ConnectionType.QueuedConnection
         )
         self.worker.status_signal.connect(
             self.main_window.set_status, Qt.ConnectionType.QueuedConnection
@@ -185,6 +199,7 @@ class ChatComponent(QWidget):
         if self.thinking_widget:
             self.thinking_widget.force_render()
             self.thinking_widget.adjust_height()
+            self.thinking_widget.finish_thinking()
             self.thinking_widget = None
 
         # 开始新的回复消息
@@ -207,6 +222,11 @@ class ChatComponent(QWidget):
             print(f"添加消息内容时出错: {e}")
             # 不要让异常导致程序崩溃
 
+    def display_error(self, content):
+        """以消息形式显示错误信息"""
+        self.message_display.add_message_by_role("system", content).is_error = True
+        self.message_display.request_scrolling()
+
     def on_worker_finished(self, full_response: str):
         """工作线程完成时调用"""
         self.previous_response_id = (
@@ -227,6 +247,58 @@ class ChatComponent(QWidget):
         # 滚动到底部
         self.message_display.request_scrolling()
 
+        # 若是聊天页面，保存聊天记录
+        if self.main_window.page_index == 1:
+            self.chat_id = self.history_manager.save_chat(
+                self.conversation_history,
+                self.message_display.format_messages(),
+                self.chat_id,
+            )
+            self.main_window.chat_page.load_chat_list()
+
+    def load_chat_history(self, chat_id):
+        """加载特定聊天记录"""
+        try:
+            # 停止当前工作线程
+            if self.worker and self.worker.isRunning():
+                self.worker.stop()
+                self.worker.wait()
+
+            # 加载聊天记录
+            chat_data = self.history_manager.load_chat(chat_id)
+            self.chat_id = chat_data.get("id", "")
+            self.conversation_history = chat_data.get("conversation_history", {})
+            messages = chat_data.get("messages", {})
+
+            # 清除当前消息并重新渲染
+            self.message_display.clear_messages()
+
+            # 重新添加所有消息
+            for msg in messages:
+                self.message_display.add_message_by_role(
+                    msg.get("role", ""),
+                    msg.get("content", ""),
+                    msg.get("is_thinking", False),
+                )
+
+            # 重新指定初始系统消息
+            if (
+                self.ini_msg
+                and len(self.conversation_history) > 0
+                and self.conversation_history[0]["role"] == "system"
+            ):
+                self.initial_msg = self.message_display.get_first_message()
+
+            # 使用主窗口设置状态
+            if self.main_window:
+                self.main_window.set_status(f"已加载对话: {chat_data['title']}")
+
+        except Exception as e:
+            print(f"加载聊天记录失败: {e}")
+            # 使用主窗口设置状态
+            if self.main_window:
+                self.main_window.set_status("加载聊天记录失败")
+
     def restart(self, force=False):
         """重新开始对话（清除此次对话历史）"""
         if not force:
@@ -234,7 +306,7 @@ class ChatComponent(QWidget):
             reply = QMessageBox.question(
                 self,
                 "确认重来",
-                "即将清除对话历史并开启新对话，确定执行吗？",
+                "即将清除本次对话的记录，并开启新对话，确定执行吗？",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No,
             )

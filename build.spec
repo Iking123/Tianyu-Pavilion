@@ -2,6 +2,7 @@
 # 使用命令: pyinstaller build.spec
 
 from PyInstaller.building.build_main import Analysis, PYZ, EXE, COLLECT
+import sys
 
 block_cipher = None
 
@@ -12,10 +13,10 @@ app_icon = "resources/icons/icon.ico"
 # 添加所有资源文件和代码目录
 added_files = [
     # 资源目录 - 包含所有子目录
-    ("resources", "resources"),  # 改为包含整个resources目录
+    ("resources", "resources"),
     # 核心代码
     ("core", "core"),
-    # 功能模块 - 更新所有子模块
+    # 功能模块
     ("features/chat", "features/chat"),
     ("features/game", "features/game"),
     ("features/interactive_novel", "features/interactive_novel"),
@@ -26,6 +27,7 @@ added_files = [
     ("ui", "ui"),
     # 单个文件
     ("funcs.py", "."),
+    ("translate.py", "."),
 ]
 
 # 分析主脚本
@@ -35,12 +37,12 @@ a = Analysis(
     binaries=[],
     datas=added_files,
     hiddenimports=[
-        # PyQt5 相关
-        "PyQt5",
-        "PyQt5.QtCore",
-        "PyQt5.QtGui",
-        "PyQt5.QtWidgets",
-        "PyQt5.QtWebEngineWidgets",
+        # PyQt6 相关
+        "PyQt6",
+        "PyQt6.QtCore",
+        "PyQt6.QtGui",
+        "PyQt6.QtWidgets",
+        "PyQt6.QtNetwork",
         # Markdown 处理
         "markdown",
         "markdown.extensions",
@@ -53,7 +55,7 @@ a = Analysis(
         "bs4",
         "lxml",
         "html2text",
-        "jieba",  # 新增分词库
+        "jieba",
         # 项目特定模块
         "core",
         "features",
@@ -78,19 +80,17 @@ a = Analysis(
 # 创建PYZ
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-# 可执行文件配置
+# 可执行文件配置（仅作为文件夹内的exe，不单独生成）
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    [],
-    name="天语阁",  # 应用名称为天语阁
+    [],  # 移除 a.binaries/a.zipfiles/a.datas，交给COLLECT处理
+    exclude_binaries=True,  # 关键：排除二进制文件，让COLLECT统一管理
+    name=app_name,
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=False,  # 禁用UPX压缩以提高启动速度
+    upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,
@@ -102,7 +102,7 @@ exe = EXE(
     entitlements_file=None,
 )
 
-# 收集所有文件
+# 收集所有文件到文件夹（核心：只生成文件夹）
 coll = COLLECT(
     exe,
     a.binaries,

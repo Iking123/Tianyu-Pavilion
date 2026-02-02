@@ -7,16 +7,20 @@ from PyQt6.QtGui import (
     QPen,
     QColor,
     QPaintEvent,
+    QBrush,
 )
-from PyQt6.QtCore import QSize, Qt, QEvent
+from PyQt6.QtCore import QSize, Qt, QEvent, QPointF, QRectF
 from funcs import resource_path
 
 
 class ImageWidget(QLabel):
-    def __init__(self, image_path):
+    def __init__(self, img: str | QPixmap, h: int | None = None):
         super().__init__()
-        pixmap = QPixmap(image_path)
-        self.setPixmap(pixmap)
+        if isinstance(img, str):
+            img = QPixmap(img)
+        if h:
+            img = img.scaledToHeight(h)
+        self.setPixmap(img)
 
 
 class ColoredWidget(QWidget):
@@ -74,6 +78,9 @@ class GoBackButton(QPushButton):
         # 设置工具提示
         self.setToolTip(tip)
 
+        # 设置手形
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
         if not callback and parent and hasattr(parent, "go_back"):
             callback = parent.go_back
         if callback:
@@ -110,8 +117,51 @@ class RestartButton(QPushButton):
         # 设置工具提示
         self.setToolTip(tip)
 
+        # 设置手形
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
         if not callback and parent and hasattr(parent, "restart"):
             callback = parent.restart
+        if callback:
+            self.clicked.connect(callback)
+
+
+class ZoomButton(QPushButton):
+    """自定义缩放按钮组件"""
+
+    def __init__(self, parent=None, callback=None):
+        super().__init__(parent)
+        self.setFixedSize(54, 54)  # 固定按钮大小
+        self.setIconSize(QSize(32, 32))  # 图标大小
+
+        # 使用资源路径加载图标
+        self.minimize_icon = QIcon(resource_path("resources/images/minimize.png"))
+        self.maximize_icon = QIcon(resource_path("resources/images/maximize.png"))
+        self.setIcon(self.minimize_icon)
+        self.status = True
+
+        # 设置样式表
+        self.setStyleSheet(
+            """
+            QPushButton {
+                background-color: transparent;
+                border-radius: 15px;
+            }
+            QPushButton:hover {
+                background-color: #E0E0E0;  /* 鼠标悬停时的灰色背景 */
+            }
+            QPushButton:pressed {
+                background-color: #C0C0C0;  /* 按下时稍深的灰色 */
+            }
+        """
+        )
+
+        # 设置工具提示
+        self.setToolTip("缩小")
+
+        # 设置手形
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
         if callback:
             self.clicked.connect(callback)
 

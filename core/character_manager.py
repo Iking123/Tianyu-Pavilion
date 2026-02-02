@@ -2,8 +2,9 @@ import json
 import os
 import threading
 import uuid
-from .config_manager import _encrypt_config, _decrypt_config
-from funcs import resource_path
+import re
+from .config_manager import _encrypt_config, _decrypt_config, get_username
+from funcs import replace_newline_with_space, resource_path
 
 if os.path.exists(resource_path("core/hardcode_characters.py")):
     from .hardcode_characters import HARDCODED_CHARACTERS
@@ -11,14 +12,14 @@ else:
     HARDCODED_CHARACTERS = []
 
 # 角色信息加密文件路径
-CHARACTERS_ENC_PATH = "enc/characters.enc"
+CHARACTERS_ENC_PATH = "data/characters.enc"
 
 # 角色数据缓存（模块级变量，初始时_cached_characters为None）
 _cache_lock = threading.Lock()  # 缓存锁
 _cached_characters = None  # 缓存合并后的所有角色（硬编码+用户自定义）
 
 
-def _load_characters():
+def _load_characters() -> list[dict]:
     """加载所有角色（硬编码+用户自定义），并缓存结果"""
     global _cached_characters  # 声明修改模块级变量
     with _cache_lock:
@@ -54,9 +55,18 @@ def _save_characters(characters_list):
         f.write(encrypted_data)
 
 
-def get_all_characters():
-    """获取所有角色"""
-    return _load_characters()
+def get_all_characters(force=False):
+    """获取所有角色（若用户名不为特别用户，隐去隐藏角色）"""
+    characters = _load_characters()
+    if not force and not (get_username(False) in ["Iking", "雨落流绮"]):
+        characters = [
+            c
+            for c in characters
+            if not (
+                c.get("is_hardcoded", False) and c.get("id", "").startswith("hidden_")
+            )
+        ]
+    return characters
 
 
 def get_character_by_id(char_id):
@@ -147,40 +157,63 @@ def delete_character(char_id):
     return deleted
 
 
-def format_character(id, prefix="", summary=False):
+def chara_get(char: dict, key: str):
+    s = str(char.get(key))
+    if not s:
+        return " "  # 如果为空，留个空
+    return replace_newline_with_space(s)
+
+
+def format_character(id, prefix="", summary=False, sp=False):
     char = get_character_by_id(id)
     if not char:
         return ""
-    if not summary:
-        return f"""### {prefix}基础信息
-|名称|性别|年龄或生年|身份|性格|爱好|
-|-|-|-|-|-|-|
-|`{char.get("name","")}`|`{char.get("gender","")}`|`{char.get("age","")}`|`{char.get("identity","")}`|`{char.get("personality","")}`|`{char.get("hobbies","")}`|
+    if summary:
+        s = char.get("summary", "")
+        if not s:
+            from core.jieba_summarizer import summarizer
 
-### {prefix}背景设定
-```
-{char.get("background","")}
-```
-"""
-
-    s = char.get("summary", "")
-    if not s:
-        from core.jieba_summarizer import summarizer
-
-        s = summarizer.summarize(format_character(id, prefix))
-    return f"""### {prefix+":" if prefix else ""}{char.get("name","")}
+            s = summarizer.summarize(format_character(id, prefix))
+        return f"""### {prefix+":" if prefix else ""}{char.get("name")}
 ```
 {s}
 ```
 """
+
+    info = f"""### {prefix}基础信息
+|名称|性别|年龄或生年|身份|性格|兴趣|
+|-|-|-|-|-|-|
+|`{char.get("name")}`|`{chara_get(char,"gender")}`|`{chara_get(char,"age")}`|`{chara_get(char,"identity")}`|`{chara_get(char,"personality")}`|`{chara_get(char,"hobbies")}`|
+
+### {prefix}背景设定
+```
+{char.get("background")}
+```
+"""
+
+    if appearance := char.get("appearance"):
+        info += f"""
+### {prefix}外貌设定
+```
+{appearance}
+```
+"""
+
+    if sp and (sp_ps := char.get("sp_ps")):
+        info += f"""
+### {prefix}补充说明
+{sp_ps}
+"""
+
+    return info
 
 
 def format_character_basic(id, prefix=""):
     char = get_character_by_id(id)
     if not char:
         return ""
-    return f"""### {prefix+":" if prefix else ""}{char.get("name","")}
-|名称|性别|年龄或生年|身份|性格|爱好|
+    return f"""### {prefix+":" if prefix else ""}{char.get("name")}
+|名称|性别|年龄或生年|身份|性格|兴趣|
 |-|-|-|-|-|-|
-|`{char.get("name","")}`|`{char.get("gender","")}`|`{char.get("age","")}`|`{char.get("identity","")}`|`{char.get("personality","")}`|`{char.get("hobbies","")}`|
+|`{char.get("name")}`|`{chara_get(char,"gender")}`|`{chara_get(char,"age")}`|`{chara_get(char,"identity")}`|`{chara_get(char,"personality")}`|`{chara_get(char,"hobbies")}`|
 """

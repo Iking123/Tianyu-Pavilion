@@ -16,25 +16,31 @@ from PyQt6.QtCore import Qt
 import os
 from ui.message_display import MessageDisplayArea
 from ui.card_widget import CardWidget
-from funcs import resource_path
+from funcs import get_screen_height, resource_path
 
 
 class CharacterButton(CardWidget):
     """角色按钮，显示角色信息"""
 
-    def __init__(self, character_data, parent=None):
+    def __init__(self, character_data: dict, parent=None):
         name = character_data.get("name", "未知角色") or "未知角色"
         gender = character_data.get("gender", "未知性别") or "未知性别"
         age = character_data.get("age", "未知年龄") or "未知年龄"
         identity = character_data.get("identity", "未知身份") or "未知身份"
         description = f"{gender} - {age} - {identity}"
+        if character_data.get("is_hardcoded") and character_data.get(
+            "id", ""
+        ).startswith("hidden"):
+            description = '<div style="color: orange;">[隐藏角色]</div> ' + description
 
         # 处理头像路径
         avatar_path = None
         if character_data.get("avatar"):
             avatar_path = resource_path(character_data["avatar"])
         else:
-            default_avatar = resource_path("resources/images/default_avatar.png")
+            default_avatar = resource_path(
+                f"resources/images/default_{"female" if character_data.get("gender")=="女" else "male" if character_data.get("gender")=="男" else "unknown"}.jpg"
+            )
             if os.path.exists(default_avatar):
                 avatar_path = default_avatar
 
@@ -114,7 +120,8 @@ class CharacterDetailDialog(QDialog):
     def setup_ui(self):
         # 设置窗口标题和大小
         self.setWindowTitle(f"角色详情 - {self.character.get('name', '未知角色')}")
-        self.setMinimumSize(1380, 1740)
+        screen_height = get_screen_height()
+        self.setMinimumSize(int(screen_height * 0.7), int(screen_height * 0.9))
 
         # 主布局
         main_layout = QVBoxLayout(self)
@@ -130,7 +137,9 @@ class CharacterDetailDialog(QDialog):
         basic_info_scroll.setVerticalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAsNeeded
         )
-        basic_info_scroll.setMaximumHeight(550)  # 关键：限制基本信息区域最大高度
+        basic_info_scroll.setMaximumHeight(
+            int(screen_height * 0.3)
+        )  # 关键：限制基本信息区域最大高度
 
         # 基本信息内容区域
         basic_info_widget = QWidget()
@@ -147,7 +156,9 @@ class CharacterDetailDialog(QDialog):
         avatar_layout.setContentsMargins(5, 5, 5, 5)
 
         avatar_label = QLabel()
-        avatar_label.setFixedSize(264, 350)  # 固定头像尺寸
+        img_height = int(screen_height * 0.145)
+        img_width = int(screen_height * 0.192)
+        avatar_label.setFixedSize(img_height, img_width)  # 固定头像尺寸
         avatar_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         avatar_path = None
         if self.character.get("avatar"):
@@ -158,8 +169,8 @@ class CharacterDetailDialog(QDialog):
             pixmap = QPixmap(avatar_path)
             if not pixmap.isNull():  # 检查图片是否有效
                 scaled_pixmap = pixmap.scaled(
-                    264,
-                    350,
+                    img_height,
+                    img_width,
                     Qt.AspectRatioMode.KeepAspectRatio,
                     Qt.TransformationMode.SmoothTransformation,
                 )
@@ -209,7 +220,9 @@ class CharacterDetailDialog(QDialog):
         main_layout.addWidget(basic_info_scroll)
 
         details_area = MessageDisplayArea()
-        details_area.setMinimumHeight(200)  # 设置最小高度，避免内容太少时区域过窄
+        details_area.setMinimumHeight(
+            int(screen_height * 0.1)
+        )  # 设置最小高度，避免内容太少时区域过窄
 
         # 添加详细信息
         details = [
@@ -217,6 +230,7 @@ class CharacterDetailDialog(QDialog):
             ("性格", self.character.get("personality", "无")),
             ("兴趣", self.character.get("hobbies", "无")),
             ("背景设定", self.character.get("background", "无")),
+            ("外貌设定", self.character.get("appearance", "无")),
             ("问候语", self.character.get("greetings", "无")),
         ]
 
@@ -225,8 +239,9 @@ class CharacterDetailDialog(QDialog):
                 f"assistant_{title}", content, auto_scroll=False
             )
 
-        details_area.container_layout.addSpacing(50)
+        details_area.container_layout.addSpacing(30)
         main_layout.addWidget(details_area, 1)  # 占据剩余空间
+        main_layout.addSpacing(20)
 
         # # === 底部按钮 ===
         # button_layout = QHBoxLayout()

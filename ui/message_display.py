@@ -1,8 +1,11 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QSizePolicy
+from typing import List
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QSizePolicy, QFrame
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QTextCursor, QColor
+
+from funcs import resource_path
 from .qtext_message_widget import MessageWidget
-from .components import ScrollToBottomButton
+from .components import ImageWidget, ScrollToBottomButton
 
 
 class MessageDisplayArea(QWidget):
@@ -27,7 +30,7 @@ class MessageDisplayArea(QWidget):
         layout.setSpacing(0)
 
         # 创建滚动区域
-        self.scroll_area = QScrollArea()
+        self.scroll_area = QScrollArea(self)
         self.scroll_area.setWidgetResizable(True)  # 允许子控件调整大小
 
         # 设置滚动区域的尺寸策略
@@ -64,6 +67,29 @@ class MessageDisplayArea(QWidget):
 
         self.scroll_area.setWidget(self.container)
         layout.addWidget(self.scroll_area)
+
+    def format_messages(self):
+        """格式化消息列表，方便存储"""
+        messages = []
+        for i in range(self.container_layout.count()):
+            widget = self.container_layout.itemAt(i).widget()
+            if (
+                isinstance(widget, MessageWidget)
+                and hasattr(widget, "raw_role")
+                and hasattr(widget, "raw_content")
+                and hasattr(widget, "is_thinking")
+            ):
+                try:
+                    messages.append(
+                        {
+                            "role": widget.raw_role,
+                            "content": widget.raw_content,
+                            "is_thinking": widget.is_thinking,
+                        }
+                    )
+                except:
+                    pass
+        return messages
 
     def resizeEvent(self, event):
         """窗口大小改变时重新定位滚动按钮"""
@@ -127,7 +153,7 @@ class MessageDisplayArea(QWidget):
             self.slider_upwards = False
 
     def add_widget(
-        self, widget, alignment=Qt.AlignmentFlag.AlignHCenter, auto_scroll=True
+        self, widget: QWidget, auto_scroll=True, alignment=Qt.AlignmentFlag.AlignHCenter
     ):
         """添加控件"""
         self.container_layout.addWidget(widget, alignment=alignment)
@@ -137,7 +163,12 @@ class MessageDisplayArea(QWidget):
         QTimer.singleShot(350, self.update_scroll_button_visibility)
         return widget
 
-    def add_message(self, widget, auto_scroll=True):
+    def add_line(self, auto_scroll=True):
+        """添加分割线"""
+        line = ImageWidget(resource_path("resources/images/divider.png"), 100)
+        return self.add_widget(line, auto_scroll)
+
+    def add_message(self, widget: MessageWidget, auto_scroll=True):
         """添加消息组件"""
         self.container_layout.addWidget(widget)
         if auto_scroll:
@@ -217,7 +248,7 @@ class MessageDisplayArea(QWidget):
         QTimer.singleShot(100, self.update_scroll_button_visibility)
         self.slider_upwards = False
 
-    def get_all_messages(self):
+    def get_all_messages(self) -> List[MessageWidget]:
         """获取所有消息控件"""
         messages = []
         for i in range(self.container_layout.count()):
@@ -311,6 +342,10 @@ class MessageDisplayArea(QWidget):
         """跳转到下一个匹配项"""
         if not self.search_matches:
             return
+        # 将当前匹配项的选中状态清理掉
+        widget = self.search_matches[self.current_match_index][0]
+        if widget and isinstance(widget, MessageWidget):
+            widget.deselect_text()
 
         self.current_match_index = (self.current_match_index + 1) % len(
             self.search_matches
@@ -322,12 +357,34 @@ class MessageDisplayArea(QWidget):
         """跳转到上一个匹配项"""
         if not self.search_matches:
             return
+        # 将当前匹配项的选中状态清理掉
+        widget = self.search_matches[self.current_match_index][0]
+        if widget and isinstance(widget, MessageWidget):
+            widget.deselect_text()
 
         self.current_match_index = (self.current_match_index - 1) % len(
             self.search_matches
         )
         self.highlight_current_match()
         return self.current_match_index + 1
+
+    def get_first_message(self):
+        """获取第一条消息"""
+        count = self.container_layout.count()
+        for i in range(count):
+            item = self.container_layout.itemAt(i)
+            if item and item.widget() and isinstance(item.widget(), MessageWidget):
+                return item.widget()
+        return None
+
+    def get_last_widget(self) -> QWidget | None:
+        """获取最后一个东西"""
+        count = self.container_layout.count()
+        for i in range(count - 1, -1, -1):
+            item = self.container_layout.itemAt(i)
+            if item and item.widget():
+                return item.widget()
+        return None
 
     def get_last_message(self):
         """获取最后一条消息"""

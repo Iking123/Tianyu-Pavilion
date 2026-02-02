@@ -6,7 +6,6 @@ from pygments.lexers import get_lexer_by_name, guess_lexer
 from pygments.formatters import HtmlFormatter
 from pygments.styles import get_style_by_name
 import html as html_module
-import html  # 新增导入
 
 
 class HighlightCodeExtension(markdown.Extension):

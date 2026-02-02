@@ -5,6 +5,7 @@ import logging
 from PyQt6.QtCore import QThread, pyqtSignal
 from core.config_manager import *
 from core.search_utils import baidu_search, tavily_search
+from core.network_check import check_internet_comprehensive_china
 
 
 class Worker(QThread):
@@ -12,6 +13,7 @@ class Worker(QThread):
 
     _running = True
     update_signal = pyqtSignal(str, str, bool)  # 角色, 内容, 是否是思考内容
+    err_signal = pyqtSignal(str)
     status_signal = pyqtSignal(str)
     search_complete = pyqtSignal(str)  # 结果
     start_thinking = pyqtSignal(str)  # 开始思考信号
@@ -83,10 +85,10 @@ class Worker(QThread):
 
             # ========== 模型逻辑分发 ==========
             if model_name.startswith("gemini"):
-                # --- 新增：调用Gemini模型的逻辑 ---
+                # --- 调用Gemini模型的逻辑 ---
                 self.process_gemini_conversation(model_name)
             else:
-                # --- 原有：调用DeepSeek/Doubao模型的逻辑 ---
+                # --- 调用其他模型的逻辑 ---
                 tools = []
                 if get_config("enable_tavily"):
                     tools.append(
@@ -113,7 +115,7 @@ class Worker(QThread):
         except Exception as e:
             logging.exception("Worker线程崩溃")
             self.update_signal.emit("system", f"处理错误: {str(e)}", False)
-        print("worker finish")
+        print("The worker finishes!")
         self.finish_signal.emit(self.full_response)
 
     def _convert_history_to_gemini_format(self):
@@ -159,10 +161,10 @@ class Worker(QThread):
 
         payload["generationConfig"] = {"thinkingConfig": {"includeThoughts": True}}
         if model_name != "gemini-2.5-pro":
-            thinking_type = get_config("thinking_type")
-            if thinking_type == "enabled":
+            enable_thinking = get_config("enable_thinking")
+            if enable_thinking:
                 payload["generationConfig"]["thinkingConfig"]["thinkingBudget"] = -1
-            elif thinking_type == "disabled":
+            else:
                 payload["generationConfig"]["thinkingConfig"]["thinkingBudget"] = 0
 
         try:
@@ -185,7 +187,7 @@ class Worker(QThread):
                         chunk_size=1024, decode_unicode=True
                     ):
                         if not self._running:
-                            break
+                            return
                         if chunk:
                             response_text += chunk
 
@@ -201,7 +203,7 @@ class Worker(QThread):
                             # 遍历数组中的每个响应对象
                             for item in response_data:
                                 if not self._running:
-                                    break
+                                    return
                                 print(item)
                                 if "candidates" in item and item["candidates"]:
                                     candidate = item["candidates"][0]
@@ -283,21 +285,17 @@ class Worker(QThread):
                     error_msg = "Gemini 响应异常: 未收到有效内容"
                     if response_text:
                         error_msg += f" (收到数据长度: {len(response_text)})"
-                    self.update_signal.emit("system", error_msg, False)
+                    self.err_signal.emit(error_msg)
                     self.status_signal.emit("❌ 响应异常")
 
         except requests.exceptions.RequestException as e:
             if self._running:
-                self.update_signal.emit(
-                    "system", f"请求 Gemini 时发生网络错误: {str(e)}", False
-                )
+                self.err_signal.emit(f"请求 Gemini 时发生网络错误: {str(e)}")
                 self.status_signal.emit("❌ 请求失败")
         except Exception as e:
             if self._running:
                 logging.error(f"处理 Gemini 响应时发生未知错误: {e}")
-                self.update_signal.emit(
-                    "system", f"处理 Gemini 响应时发生未知错误: {str(e)}", False
-                )
+                self.err_signal.emit(f"处理 Gemini 响应时发生未知错误: {str(e)}")
                 self.status_signal.emit("❌ 响应处理失败")
 
     def _emit_content_in_chunks(self, assist, content, is_thinking, chunk_size=20):
@@ -312,27 +310,66 @@ class Worker(QThread):
         # 分块发送
         for i in range(0, len(content), chunk_size):
             if not self._running:
-                break
+                return
             chunk = content[i : i + chunk_size]
             self.update_signal.emit(assist, chunk, is_thinking)
             # 稍微延迟一下，增强流式体验
             time.sleep(0.1)  # 100毫秒延迟
 
+    def _diminish_system_history(self):
+        """获取将系统角色改为用户角色的历史记录"""
+        history = []
+
+        for msg in self.conversation_history:
+            role = msg.get("role")
+            content = msg.get("content", "")
+            if role == "system":
+                history.append({"role": "user", "content": content})
+            else:
+                history.append(msg)
+
+        return history
+
     def process_conversation(self, model_name, tools):
-        """处理与DeepSeek/Doubao模型的流式对话"""
-        while self._running and self.function_call_count < self.max_function_calls:
+        """处理与非Gemini模型的流式对话"""
+        while self._running:
+            if not check_internet_comprehensive_china():
+                self.err_signal.emit("你未联网！o(╥﹏╥)o")
+                self.status_signal.emit("未联网！")
+                return
+
             # 准备请求载荷
+            conversation_history = self.conversation_history
+            # if model_name.startswith("mistral"):
+            #     conversation_history = self._diminish_system_history()
             payload = {
                 "model": model_name,
-                "messages": self.conversation_history,
+                "messages": conversation_history,
                 "stream": True,
             }
-            if model_name == "doubao-seed-1-6-250615":
-                payload["thinking"] = {"type": get_config("thinking_type")}
-            if model_name.startswith("doubao") and self.previous_response_id:
+            # print(model_name, get_config("reasoning_effort"))
+            if model_name.startswith("doubao"):
+                payload["thinking"] = {
+                    "type": (
+                        "disabled"
+                        if get_config("reasoning_effort") == "minimal"
+                        else "enabled"
+                    )
+                }
+                payload["reasoning"] = {"effort": get_config("reasoning_effort")}
                 payload["caching"] = {"type": "enabled"}
-                if self.previous_response_id != "start":
+                if self.previous_response_id and self.previous_response_id != "start":
                     payload["previous_response_id"] = self.previous_response_id
+
+            enable_thinking = get_config("enable_thinking")
+            if model_name.startswith("deepseek"):
+                model_name = payload["model"] = (
+                    "deepseek-reasoner" if enable_thinking else "deepseek-chat"
+                )
+            if model_name == "glm-4.5-flash":
+                payload["thinking"] = {
+                    "type": "enabled" if enable_thinking else "disabled"
+                }
 
             # 只有在还有函数调用次数且配置启用了搜索时才提供工具
             if tools and self.function_call_count < self.max_function_calls:
@@ -343,7 +380,7 @@ class Worker(QThread):
                 "Authorization": f"Bearer {get_api_key()}",
                 "Content-Type": "application/json",
             }
-
+            # print(payload)
             try:
                 # 使用 with 语句自动管理 response 的生命周期
                 with requests.post(
@@ -377,11 +414,11 @@ class Worker(QThread):
 
                     for line in lines:
                         if not self._running:
-                            break
+                            return
 
                         if line and b"data: [DONE]" not in line:
                             if not self._running:
-                                break
+                                return
                             if line.startswith(b"data: "):
                                 json_data = line[6:]
                                 try:
@@ -401,11 +438,7 @@ class Worker(QThread):
                                         ):
                                             for tool_delta in delta["tool_calls"]:
                                                 # 新的函数调用
-                                                if (
-                                                    "index" in tool_delta
-                                                    and tool_delta["index"] == 0
-                                                    and current_tool_call is None
-                                                ):
+                                                if current_tool_call is None:
                                                     current_tool_call = {
                                                         "id": "",
                                                         "type": "function",
@@ -434,7 +467,7 @@ class Worker(QThread):
                                         # 处理思考内容
                                         reasoning = delta.get("reasoning_content", "")
                                         if not self._running:
-                                            break
+                                            return
                                         if reasoning:
                                             reasoning_content += reasoning
 
@@ -452,9 +485,14 @@ class Worker(QThread):
                                         # 处理回复内容
                                         content = delta.get("content", "")
                                         if not self._running:
-                                            break
+                                            return
                                         if content:
                                             if not has_started_replying:
+                                                if (
+                                                    content == "\n"
+                                                    and model_name.startswith("glm")
+                                                ):  # 抽象GLM有时会先出来一个换行符回复内容，忽略掉
+                                                    continue
                                                 self.start_replying.emit(assist)
                                                 self.status_signal.emit(
                                                     "💬 正在生成回复..."
@@ -468,7 +506,7 @@ class Worker(QThread):
                                 except json.JSONDecodeError:
                                     continue
                     if not self._running:
-                        break
+                        return
 
                     # 保存提取到的id
                     self.previous_response_id = response_id
@@ -490,7 +528,7 @@ class Worker(QThread):
                     self.conversation_history.append(assistant_message)
 
                     if not self._running:
-                        break
+                        return
 
                     # 如果有函数调用，执行函数
                     if tool_calls:
@@ -500,7 +538,7 @@ class Worker(QThread):
                         # 执行每个函数调用
                         for tool_call in tool_calls:
                             if not self._running:
-                                break
+                                return
 
                             function_name = tool_call["function"]["name"]
 
@@ -524,7 +562,7 @@ class Worker(QThread):
                                 result, formatted = f"⚠️ 未知函数: {function_name}", ""
 
                             if not self._running:
-                                break
+                                return
 
                             # 发送格式化后的搜索结果
                             self.search_complete.emit(formatted)
@@ -549,7 +587,8 @@ class Worker(QThread):
 
             except requests.exceptions.RequestException as e:
                 if self._running:  # 仅报告非主动停止的错误
-                    self.update_signal.emit("system", f"网络错误: {str(e)}", False)
+                    self.err_signal.emit(f"网络错误: {str(e)}")
+                    self.sleep(1)
 
     def stop(self):
         """仅仅设置标志位，让线程的循环自行退出。"""

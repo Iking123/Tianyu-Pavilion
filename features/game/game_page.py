@@ -129,7 +129,7 @@ class GamePage(QWidget):
             card = GameCard(
                 game["title"],
                 game["description"],
-                game["icon"],
+                game["icon"] or "",
                 create_handler(game["title"]),  # 使用闭包正确捕获当前游戏标题
             )
             games_layout.addWidget(card)

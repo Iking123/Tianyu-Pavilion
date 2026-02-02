@@ -256,7 +256,6 @@ class InputPanel(QWidget):
         """清空输入框并设置焦点"""
         self.input_field.clear()
         self.input_field.setFocus()  # 自动聚焦
-        self.send_button.setEnabled(True)  # 重新启用发送按钮
 
     def set_send_enabled(self, enabled):
         """设置发送按钮状态"""

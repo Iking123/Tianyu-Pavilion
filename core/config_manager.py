@@ -8,14 +8,15 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from translate import TRANSLATE
 
+DATA_PATH = os.path.join(os.getcwd(), "data")
 # 配置文件路径（加密后）
-CONFIG_ENC_PATH = "enc/config.enc"
+CONFIG_ENC_PATH = os.path.join(DATA_PATH, "config.enc")
 # 密钥文件路径（安全存储）
-KEY_PATH = "enc/config.key"
+KEY_PATH = os.path.join(DATA_PATH, "config.key")
 
 # 默认配置
 DEFAULT_CONFIG = {
-    "version": "1.01",
+    "version": "1.04",
     "deepseek_api_key": "",
     "volcengine_api_key": "",
     "gemini_api_key": "",
@@ -23,9 +24,11 @@ DEFAULT_CONFIG = {
     "username": "",
     "enable_tavily": False,
     "enable_baidu": "自动",
-    "speed_slider": 8,
     "model": "deepseek-chat",
-    "thinking_type": "disabled",
+    "enable_thinking": False,
+    "reasoning_effort": "minimal",
+    "speed_slider": 8,
+    "ex_scroll_step": 60,
 }
 
 # 全局配置变量（单例）
@@ -57,6 +60,8 @@ def _generate_key():
 
 def _get_key():
     """获取加密密钥（如果不存在则生成）"""
+    os.makedirs(DATA_PATH, mode=0o777, exist_ok=True)
+
     if not os.path.exists(KEY_PATH):
         return _generate_key()
 
@@ -115,8 +120,8 @@ def get_config(key=None):
     return _config if key is None else _config.get(key, None)
 
 
-def get_username(show_developer=True):
-    """获取用户名，若为Iking则显示开发者"""
+def get_username(show_developer: bool = False) -> str:
+    """获取用户名，若为Iking且show_developer=True则显示开发者"""
     name = get_config("username")
     return (
         f"{name}（此用户为本平台开发者）"
@@ -127,27 +132,27 @@ def get_username(show_developer=True):
 
 def get_model() -> str:
     """获取现在的模型"""
-    return get_config("model")
+    return get_config("model") or "deepseek-chat"
 
 
 def get_model_name2():
     """获取现在的模型的另一种名称"""
     name = ""
     model = get_model()
-    if model == "deepseek-reasoner":
-        name = "DeepSeek-R1"
-    elif model == "deepseek-chat":
-        name = "DeepSeek-V3"
-    elif model == "doubao-seed-1-6-thinking-250715":
-        name = "Doubao-Seed-1.6-thinking"
-    elif model == "doubao-seed-1-6-250615":
-        name = "Doubao-Seed-1.6"
-    elif model == "gemini-2.5-pro":
-        name = "Gemini 2.5 Pro"
+    if model.startswith("deepseek"):
+        name = "DeepSeek-V3.2"
+    elif model == "doubao-seed-1-8-251228":
+        name = "Doubao-Seed-1.8"
+    elif model == "gemini-3-flash-preview":
+        name = "Gemini 3 Flash"
     elif model == "gemini-2.5-flash":
         name = "Gemini 2.5 Flash"
     elif model == "gemini-2.5-flash-lite":
         name = "Gemini 2.5 Flash-Lite"
+    elif model == "mistral-large-2512":
+        name = "Mistral Large 3"
+    elif model == "glm-4.7-flash":
+        name = "GLM-4.7-Flash"
     return name
 
 
@@ -163,7 +168,13 @@ def get_base_url():
     model = get_model()
     if model.startswith("deepseek"):
         return "https://api.deepseek.com/v1"
-    return "https://ark.cn-beijing.volces.com/api/v3"
+    elif model.startswith("doubao"):
+        return "https://ark.cn-beijing.volces.com/api/v3"
+    elif model.startswith("mistral"):
+        return "https://api.mistral.ai/v1"
+    elif model.startswith("glm"):
+        return "https://open.bigmodel.cn/api/paas/v4"
+    return ""
 
 
 def get_api_key():
@@ -175,6 +186,10 @@ def get_api_key():
         return get_config("volcengine_api_key")
     elif model.startswith("gemini"):
         return get_config("gemini_api_key")
+    elif model.startswith("mistral"):
+        return get_config("mistral_api_key")
+    elif model.startswith("glm"):
+        return get_config("glm_api_key")
     return ""
 
 
@@ -198,7 +213,7 @@ def get_system_prompt():
     prompt += f"\n\n当前时间：{time.asctime()}"
 
     # 添加用户名
-    name = get_username()
+    name = get_username(True)
     if name:
         prompt += f"\n用户名：{name}"
 

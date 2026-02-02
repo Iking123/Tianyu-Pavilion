@@ -1,9 +1,9 @@
 import os
 import sys
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QScrollArea
 from PyQt6.QtGui import QPalette, QColor, QIcon, QFontDatabase
 from PyQt6.QtNetwork import QNetworkAccessManager
-from PyQt6.QtCore import QObject, QThread, pyqtSignal
+from PyQt6.QtCore import QObject, QThread, pyqtSignal, QEvent, Qt
 from ui.main_window import MainWindow
 from core.config_manager import get_config
 from ui.styles import APP_STYLESHEET, ENHANCED_SCROLLBAR_STYLE
@@ -19,6 +19,69 @@ class SomethingWorker(QObject):
         from core.jieba_summarizer import summarizer
 
         self.finished.emit()  # 任务完成后发送信号
+
+
+def ex_scroll(
+    scroll_area: QScrollArea, key, ex_scroll_step=get_config("ex_scroll_step")
+):
+    scroll_bar = scroll_area.verticalScrollBar()
+    if scroll_bar:
+        # 计算新的滚动位置
+        current_pos = scroll_bar.value()
+        if key == Qt.Key.Key_Up:
+            new_pos = max(0, current_pos - ex_scroll_step)
+        else:  # Key_Down
+            new_pos = min(
+                scroll_bar.maximum(),
+                current_pos + ex_scroll_step,
+            )
+
+        # 设置新的滚动位置
+        scroll_bar.setValue(new_pos)
+
+
+class ScrollSpeedFilter(QObject):
+    def eventFilter(self, obj, event):
+        # 检测键盘按下事件
+        if event.type() == QEvent.Type.KeyPress:
+            key = event.key()
+
+            # 检查是否是上键或下键
+            if key in (Qt.Key.Key_Up, Qt.Key.Key_Down):
+                # 获取当前具有焦点的部件
+                focus_widget = QApplication.focusWidget()
+
+                if focus_widget:
+                    # 查找是否有滚动区域或可滚动部件
+                    scroll_area = self.find_scroll_parent(focus_widget)
+                    if scroll_area:
+                        ex_scroll(scroll_area, key)
+
+                # print(obj.__class__.__name__)
+                if hasattr(obj, "parent") and obj.parent():
+                    p = obj.parent()
+                    n = p.__class__.__name__
+                    if n == "MessageDisplayArea":
+                        p.keyPressEvent(event)
+                    if (
+                        n == "DelayedWrapper"
+                        and p.original_class_name == "MessageWidget"
+                    ):
+                        p.keyPressEvent(event)
+        # 默认处理
+        return super().eventFilter(obj, event)
+
+    def find_scroll_parent(self, widget):
+        """查找部件的父级中是否有QScrollArea"""
+        current = widget
+        while current:
+            if isinstance(current, QScrollArea):
+                return current
+            # 检查部件是否有垂直滚动条
+            if hasattr(current, "verticalScrollBar"):
+                return current
+            current = current.parentWidget()
+        return None
 
 
 def main():
@@ -87,6 +150,27 @@ def main():
         resource_path("resources/font/1610424926410123.ttf")
     )
     QFontDatabase.addApplicationFont(resource_path("resources/font/黑白心中文字体.TTF"))
+    QFontDatabase.addApplicationFont(
+        resource_path("resources/font/1642322874985804.ttf")
+    )
+    font_id = QFontDatabase.addApplicationFont(
+        resource_path("resources/font/字小魂丹青行书.ttf")
+    )
+
+    if font_id == -1:
+        print("无法加载字体文件")
+        return None
+
+    # 通过字体ID获取字体家族名称
+    font_families = QFontDatabase.applicationFontFamilies(font_id)
+
+    print(font_families)
+
+    # 创建滚动速度过滤器
+    scroll_filter = ScrollSpeedFilter()
+
+    # 为整个应用程序安装事件过滤器
+    app.installEventFilter(scroll_filter)
 
     # 设置全局滚轮速率
     app.setWheelScrollLines(get_config("speed_slider"))
@@ -94,14 +178,11 @@ def main():
     # 创建主窗口
     window = MainWindow()
 
-    # 设置应用图标（优先使用不同尺寸）
+    # 设置应用图标
     icon_sizes = [
-        "icon_256x256.ico",  # 主图标
-        "icon_128x128.ico",  # 中等图标
-        "icon_64x64.ico",  # 小图标
-        "icon_32x32.ico",  # 任务栏图标
-        "icon.png",  # 通用格式
-        "icon.jpg",  # 备用格式
+        "icon.ico",
+        #     "icon.png",  # 通用格式
+        #     "icon.jpg",  # 备用格式
     ]
 
     # 尝试加载不同尺寸的图标

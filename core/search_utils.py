@@ -52,7 +52,7 @@ def tavily_search(query):
         results = response.get("results", [])
 
         # 格式化结果
-        formatted = "【Tavily搜索结果】\n"
+        formatted = "【Tavily搜索结果】（给AI看的是JSON，给您看的才长这样~）\n"
         for idx, item in enumerate(results):
             title = item.get("title", "无标题")
             url = item.get("url", "#")

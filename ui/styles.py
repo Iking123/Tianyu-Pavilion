@@ -38,19 +38,29 @@ APP_STYLESHEET = """
     QComboBox QAbstractItemView {
         border: 1px solid #ccc;
         background: snow;
-        padding: 2px; /* 增加选项间距，避免拥挤 */
     }
-    
     /* 列表项基础样式（非悬停/非选中） */
     QComboBox QAbstractItemView::item {
         color: black;  /* 默认黑色文字 */
         padding: 8px 12px; /* 增大点击区域，避免误触 */
     }
-    
-    /* 选中态：区分悬停，设为蓝色 */
     QComboBox QAbstractItemView::item:selected {
-        color: #0078d7;  /* 选中文字改回蓝色，避免与悬停混淆 */
-        background: #e8f4ff;
+        background: #4a90e2;
+        background-color: #4a90e2;
+        color: white;
+    }
+    
+    QMenu {
+        border: 1px solid #ccc;
+        background: snow;
+    }
+    QMenu::item {
+        color: black;  /* 默认黑色文字 */
+        padding: 8px 12px; /* 增大点击区域，避免误触 */
+    }
+    QMenu::item:selected {
+        background-color: #4a90e2;
+        color: white;
     }
 """
 
@@ -154,225 +164,6 @@ TIME_STYLE = """
     }
 """
 
-ASSIST_STYLE = """
-    h1, h2, h3, h4, h5, h6 {
-        margin-top: 0.5em;
-        margin-bottom: 0.5em;
-        font-weight: bold;
-    }
-    h1 { font-size: 1.6em; }
-    h2 { font-size: 1.4em; }
-    h3 { font-size: 1.2em; }
-    h4 { font-size: 1.1em; }
-    pre, code {
-        font-family: 'Consolas', 'Courier New', monospace;
-        background-color: #f5f7fa;
-        border-radius: 4px;
-        padding: 2px 4px;
-        white-space: pre-wrap;
-    }
-    pre {
-        padding: 10px;
-        overflow-x: auto;
-    }
-    blockquote {
-        border-left: 3px solid #4A90E2;
-        padding-left: 10px;
-        margin-left: 0;
-        color: #555;
-        background-color: #f8f9fa;
-        padding: 8px;
-        border-radius: 0 4px 4px 0;
-    }
-    table {
-        border-collapse: collapse;
-        width: 100%;
-        margin: 10px 0;
-        border: 1px solid #ddd !important;
-    }
-    th {
-        background-color: #f2f2f2 !important;
-        font-weight: bold;
-        border: 1px solid #ddd !important;
-    }
-    td {
-        border: 1px solid #ddd !important;
-        padding: 8px;
-        text-align: left;
-    }
-    a {
-        color: #4A90E2;
-        text-decoration: none;
-    }
-    a:hover {
-        text-decoration: underline;
-    }
-    ul, ol {
-        padding-left: 20px;
-        margin: 8px 0;
-    }
-    li {
-        margin-bottom: 4px;
-    }
-    hr {
-        border: none;
-        border-top: 1px solid #ddd;
-        margin: 12px 0;
-        height: 1px;
-        background-color: #ddd;
-    }
-    
-    /* 数学公式样式 */
-    img[src*=".svg"] {
-        max-width: 100%;
-        height: auto;
-        background-color: transparent;
-        border: none !important;
-    }
-
-    /* 行内公式样式必须与函数中设置的一致 */
-    img[src*=".svg"][style*="inline"] {
-        max-height: 1.1em !important;  /* 关键：加!important确保优先 */
-        margin: 0 1px !important;
-    }
-
-    /* 块级公式同理 */
-    img[src*=".svg"][style*="block"] {
-        max-height: 2.5em !important;
-        margin: 0.3em auto !important;
-    }
-    
-    /* 数学公式容器样式 */
-    .math-container {
-        text-align: center;
-        margin: 10px 0;
-    }
-    
-    /* 数学公式错误回退样式 */
-    .math-fallback {
-        font-family: 'Times New Roman', serif;
-        font-style: italic;
-        color: #333;
-    }
-    
-    .math-fallback.inline {
-        display: inline;
-        background-color: #f8f9fa;
-        padding: 2px 5px;
-        border-radius: 3px;
-        border: 1px solid #e0e0e0;
-        font-size: 0.95em;
-    }
-    
-    .math-fallback.block {
-        display: block;
-        text-align: center;
-        background-color: #f8f9fa;
-        padding: 10px;
-        margin: 15px 0;
-        border: 1px dashed #c0c0c0;
-        border-radius: 4px;
-        font-size: 1.1em;
-    }
-    """
-THINKING_STYLE = """
-    body {
-        font-family: 'Segoe UI', Arial, sans-serif;
-        font-size: 11pt;
-        line-height: 1.6;
-        color: #555;
-        padding: 8px;
-    }
-    pre {
-        background-color: #F5F5F5;
-        border: 1px solid #E0E0E0;
-        border-radius: 4px;
-        padding: 10px;
-        overflow: auto;
-    }
-    code {
-        background-color: #F5F5F5;
-        padding: 2px 4px;
-        border-radius: 3px;
-        font-family: Consolas, Monaco, 'Andale Mono', monospace;
-    }
-    blockquote {
-        border-left: 3px solid #FFC107;  /* 黄色边框 */
-        padding-left: 10px;
-        margin-left: 0;
-        color: #666;
-        font-style: italic;
-        background-color: #FFFFF0 !important;
-    }
-    table {
-        border-collapse: collapse;
-        width: 100%;
-        margin: 10px 0;
-        background-color: #FFFFF0 !important;
-    }
-    th, td {
-        border: 1px solid #E0E0E0;
-        padding: 8px;
-        text-align: left;
-        background-color: #FFFFF0 !important; 
-    }
-    th {
-        background-color: #FFF3CD !important;  /* 浅黄色表头 */
-    }
-    h1, h2, h3, h4, h5, h6 {
-        color: #E65100;  /* 深橙色标题 */
-        margin-top: 15px;
-        margin-bottom: 10px;
-    }
-    
-    /* Thinking 模式下的 SVG 数学公式样式 */
-    img[src*=".svg"] {
-        max-width: 100%;
-        height: auto;
-        background-color: transparent;
-        border: none !important;
-    }
-
-    /* 行内公式样式必须与函数中设置的一致 */
-    img[src*=".svg"][style*="inline"] {
-        max-height: 1.1em !important;  /* 关键：加!important确保优先 */
-        margin: 0 1px !important;
-    }
-
-    /* 块级公式同理 */
-    img[src*=".svg"][style*="block"] {
-        max-height: 2.5em !important;
-        margin: 0.3em auto !important;
-    }
-    
-    /* Thinking 模式下的数学公式错误回退样式 */
-    .math-fallback {
-        font-family: 'Times New Roman', serif;
-        font-style: italic;
-        color: #666;
-    }
-    
-    .math-fallback.inline {
-        display: inline;
-        background-color: #FFFFF0;
-        padding: 2px 5px;
-        border-radius: 3px;
-        border: 1px solid #E0D5B0;
-        font-size: 0.95em;
-    }
-    
-    .math-fallback.block {
-        display: block;
-        text-align: center;
-        background-color: #FFFFF0;
-        padding: 10px;
-        margin: 15px 0;
-        border: 1px dashed #D0C090;
-        border-radius: 4px;
-        font-size: 1.1em;
-    }
-"""
-
 # 不同消息，“角色名称”部分的样式
 MESSAGE_STYLES = {
     "": """color: #4A90E2;""",
@@ -416,22 +207,30 @@ BUTTON_STYLES = {
     }
     """,
     "option": """
-        QPushButton {
-            background-color: #5DADE2;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            padding: 8px 15px;
-            font-size: 30px;
-            font-family: Microsoft YaHei;
-            min-width: 120px;
-        }
-        QPushButton:hover {
-            background-color: #3498DB;
-        }
-        QPushButton:pressed {
-            background-color: #2E86C1;
-        }
+    #buttonContainer {
+        background-color: #F3DEFF;
+    }
+    QPushButton {
+        background-color: #F3DEFF;
+        color: #6B6B6B;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 15px;
+        font-family: Microsoft YaHei;
+        min-width: 120px;
+    }
+    QPushButton:hover {
+        background-color: #EED0FD;
+        color: black;
+        font-weight: bold;
+        text-decoration: underline;
+    }
+    QPushButton:pressed {
+        background-color: #E6C8F5;
+        color: black;
+        font-weight: bold;
+        text-decoration: underline;
+    }
     """,
 }
 
@@ -464,6 +263,7 @@ MESSAGE_BASE_STYLES = {
             border: 1px solid #C0D5E0;
             border-radius: 8px;
             padding: 12px;
+            color: #333;
             font-size: 11pt;
         }
     """,
@@ -473,6 +273,7 @@ MESSAGE_BASE_STYLES = {
             border: 1px solid #E0D5B0;
             border-radius: 8px;
             padding: 12px;
+            color: #555;
             font-size: 11pt;
         }
     """,
@@ -511,7 +312,7 @@ MESSAGE_BASE_STYLES = {
             border: 1px solid #EFE6DD; /* 淡奶茶色边框，柔和不突兀 */
             border-radius: 8px;
             padding: 12px;
-            color: #666;
+            color: #4A3A29;
             font-size: 11pt;
         }
     """,
