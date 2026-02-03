@@ -1,1 +1,10 @@
 PyQt6>=6.4.0
+markdown
+pygments
+requests
+lxml
+jieba
+numpy
+inspect
+baidusearch
+tavily
