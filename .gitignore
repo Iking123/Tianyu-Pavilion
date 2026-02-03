@@ -23,7 +23,7 @@ fuck.py
 # 忽略构建时的文件
 build/
 dist/
-*.zip
+dist/*.zip
 
 # 忽略某些资源文件
 resources/images/character
